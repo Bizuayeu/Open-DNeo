@@ -90,8 +90,13 @@ singular directions holding the squared weight: 50%: 201, 90%: 1383, 99%: 2851 o
 - Every block is at chance, with signs split evenly. The entrance mixes all coordinates, and the five layers behind
   it were trained on the mixed ones. It cannot be moved into DNeo's non-mixing entrance as it is.
 - To carry the layers over, a linear bridge from the new entrance's output to the old one's is fitted by least
-  squares and folded into each layer's key and value projections. Fitting it needs recorded rows of the target, so
-  its quality is not known yet.
+  squares. Fitting it needs recorded rows of the target, so its quality is not known yet.
+- The bridge cannot simply be folded into the layers. A context row reaches a layer only through its key and value
+  projections, so a bridge composes with those two exactly. But the published DNeo layer, like DFlash2's, has one
+  key and one value projection, and its block rows are read through the same two: folded there, the bridge would
+  change the block rows too. A bridge needs either key and value projections for the context alone or a matrix kept
+  in the entrance, and the published DNeo layout has neither. TensorFold's GLM path does pack the context's
+  projections as a linear of their own, from the same two tensors. Which form to use is not decided.
 - Limit: weight energy says nothing about how large each layer's input is, so the blocks' energy shares do not rank
   the layers.
 

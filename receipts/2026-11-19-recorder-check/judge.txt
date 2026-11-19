@@ -1,0 +1,118 @@
+launches: recb recb2 recf recg recg2 recp recp2 rect recu recv
+replies
+  pass recb answered its 8 requests
+  pass recb: 4 of 4 replies are the same drafted and plain
+  pass recf: 4 of 4 replies are the same drafted and plain
+  pass recf: 8 of 8 replies are recb's
+  pass rect: 4 of 4 replies are the same drafted and plain
+  pass rect: 8 of 8 replies are recb's
+  pass recu: 4 of 4 replies are the same drafted and plain
+  pass recu: 8 of 8 replies are recb's
+  pass recv: 4 of 4 replies are the same drafted and plain
+  pass recv: 8 of 8 replies are recb's
+  pass recb2: 8 of 8 first tokens after a long prompt are recb's
+  pass recf: 8 of 8 first tokens after a long prompt are recb's
+  pass recg: 8 of 8 first tokens after a long prompt are recb's
+  pass recg2: 8 of 8 first tokens after a long prompt are recb's
+  pass recp: 8 of 8 first tokens after a long prompt are recb's
+  pass recp2: 8 of 8 first tokens after a long prompt are recb's
+  pass rect: 8 of 8 first tokens after a long prompt are recb's
+startup
+  pass recb: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recb: the hook's look: artup 0+0, recorder lines 0 (record no), lists R=0 S=0 -> ok
+  pass recb2: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recb2: the hook's look: , startup 0+0, recorder lines 0 (record no), lists S=0 -> ok
+  pass recf: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recf: the hook's look:  recorder lines 1 (record yes), lists R=0 S=0 files=80 -> ok
+  pass recg: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recg: the hook's look: , startup 0+0, recorder lines 0 (record no), lists S=0 -> ok
+  pass recg2: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recg2: the hook's look: , startup 0+0, recorder lines 0 (record no), lists S=0 -> ok
+  pass recp: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recp: the hook's look: , startup 0+0, recorder lines 0 (record no), lists S=0 -> ok
+  pass recp2: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recp2: the hook's look: , startup 0+0, recorder lines 0 (record no), lists S=0 -> ok
+  pass rect: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass rect: the hook's look: rder lines 1 (record yes), lists R=0 F=0 S=0 files=100 -> ok
+  pass recu: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recu: the hook's look: 0+0, recorder lines 1 (record yes), lists R=0 files=40 -> ok
+  pass recv: lines with disabled, fallback or compile failed in the ranks' logs: 0+0
+  pass recv: the hook's look: 0+0, recorder lines 1 (record yes), lists R=0 files=40 -> ok
+prompt-pass speed on the S list (tokens computed a second of prefill; seen, not judged)
+  recb (record no, reduce unset, pair unset, taps unset): median 1291, from 1271 to 1533 tok/s, 0 cached tokens
+  recb2 (record no, reduce unset, pair unset, taps unset): median 1281, from 1258 to 1521 tok/s, 0 cached tokens
+  recf (record yes, reduce unset, pair unset, taps unset): median 1285, from 1269 to 1520 tok/s, 0 cached tokens
+  recg (record no, reduce gather, pair 0, taps unset): median 1220, from 1192 to 1425 tok/s, 0 cached tokens
+  recg2 (record no, reduce gather, pair 0, taps unset): median 1219, from 1200 to 1429 tok/s, 0 cached tokens
+  recp (record no, reduce unset, pair 0, taps unset): median 1282, from 1264 to 1522 tok/s, 0 cached tokens
+  recp2 (record no, reduce unset, pair 0, taps unset): median 1282, from 1265 to 1520 tok/s, 0 cached tokens
+  rect (record yes, reduce gather, pair unset, taps 21998839283744): median 1192, from 1140 to 1389 tok/s, 0 cached tokens
+  recf over recb and recb2, prompt by prompt: median 0.9984, from 0.9926 to 1.0031
+  recg over recb and recb2, prompt by prompt: median 0.9458, from 0.9331 to 0.9524
+  recg2 over recb and recb2, prompt by prompt: median 0.9476, from 0.9358 to 0.9560
+  recp over recb and recb2, prompt by prompt: median 0.9971, from 0.9908 to 1.0002
+  recp2 over recb and recb2, prompt by prompt: median 0.9978, from 0.9904 to 1.0025
+  rect over recb and recb2, prompt by prompt: median 0.9246, from 0.8800 to 0.9358
+files
+  pass recf: the reader's checks: findings 0; streams 16: 16 finished, 0 unfinished
+  pass recf: 16 streams for 16 requests
+  pass recf: rows of [((45,), 4096, 'bf16')]
+  pass rect: the reader's checks: findings 0; streams 20: 20 finished, 0 unfinished
+  pass rect: 20 streams for 20 requests
+  pass rect: rows of [((6, 15, 25, 34, 43, 45), 4096, 'bf16')]
+  pass recu: the reader's checks: findings 0; streams 8: 8 finished, 0 unfinished
+  pass recu: 8 streams for 8 requests
+  pass recu: rows of [((6, 15, 25, 34, 43, 45), 4096, 'bf16')]
+  pass recv: the reader's checks: findings 0; streams 8: 8 finished, 0 unfinished
+  pass recv: 8 streams for 8 requests
+  pass recv: rows of [((6, 25, 45), 4096, 'bf16')]
+reply rows against the reply's tokens on the R list (seen, not judged)
+  recf rows-prose: 47 reply rows, 48 tokens, 10 rounds, 41 drafted, 37 accepted, rounds x tokens_per_round 48.0
+  recf rows-prose-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recf rows-code: 48 reply rows, 48 tokens, 18 rounds, 55 drafted, 30 accepted, rounds x tokens_per_round 48.0
+  recf rows-code-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recf rows-list: 47 reply rows, 48 tokens, 20 rounds, 45 drafted, 27 accepted, rounds x tokens_per_round 48.0
+  recf rows-list-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recf rows-table: 47 reply rows, 48 tokens, 18 rounds, 55 drafted, 29 accepted, rounds x tokens_per_round 48.0
+  recf rows-table-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  rect rows-prose: 47 reply rows, 48 tokens, 10 rounds, 41 drafted, 37 accepted, rounds x tokens_per_round 48.0
+  rect rows-prose-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  rect rows-code: 48 reply rows, 48 tokens, 18 rounds, 55 drafted, 30 accepted, rounds x tokens_per_round 48.0
+  rect rows-code-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  rect rows-list: 47 reply rows, 48 tokens, 20 rounds, 47 drafted, 27 accepted, rounds x tokens_per_round 48.0
+  rect rows-list-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  rect rows-table: 47 reply rows, 48 tokens, 17 rounds, 52 drafted, 30 accepted, rounds x tokens_per_round 48.0
+  rect rows-table-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recu rows-prose: 47 reply rows, 48 tokens, 10 rounds, 41 drafted, 37 accepted, rounds x tokens_per_round 48.0
+  recu rows-prose-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recu rows-code: 48 reply rows, 48 tokens, 16 rounds, 54 drafted, 32 accepted, rounds x tokens_per_round 48.0
+  recu rows-code-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recu rows-list: 47 reply rows, 48 tokens, 20 rounds, 45 drafted, 27 accepted, rounds x tokens_per_round 48.0
+  recu rows-list-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recu rows-table: 47 reply rows, 48 tokens, 17 rounds, 52 drafted, 30 accepted, rounds x tokens_per_round 48.0
+  recu rows-table-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recv rows-prose: 47 reply rows, 48 tokens, 10 rounds, 41 drafted, 37 accepted, rounds x tokens_per_round 48.0
+  recv rows-prose-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recv rows-code: 48 reply rows, 48 tokens, 16 rounds, 54 drafted, 32 accepted, rounds x tokens_per_round 48.0
+  recv rows-code-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recv rows-list: 47 reply rows, 48 tokens, 20 rounds, 45 drafted, 27 accepted, rounds x tokens_per_round 48.0
+  recv rows-list-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+  recv rows-table: 47 reply rows, 48 tokens, 17 rounds, 54 drafted, 30 accepted, rounds x tokens_per_round 48.0
+  recv rows-table-plain: 47 reply rows, 48 tokens, 47 rounds, 0 drafted, 0 accepted, rounds x tokens_per_round 48.0
+again
+  pass 8 of 8 streams of the R list are the same bytes in rect and recu
+shared
+  pass tap 6: 8 of 8 streams hold the same bytes in rect and recv
+  pass tap 25: 8 of 8 streams hold the same bytes in rect and recv
+  pass tap 45: 8 of 8 streams hold the same bytes in rect and recv
+seen: the final norm's rows (tap 45) are the same bytes on the gather and the split path in 8 of 8 streams
+seen: 188 of 188 reply rows are the same bytes drafted and plain
+feedback
+  pass 4 streams of the F list
+  seen: positions 0 to 387 hold the same tokens in a first stream (from 0, prompt 341, 47 reply rows) and its F stream (from 0, 388 rows)
+  seen: positions 0 to 367 hold the same tokens in a first stream (from 0, prompt 320, 48 reply rows) and its F stream (from 0, 368 rows)
+  seen: positions 0 to 335 hold the same tokens in a first stream (from 0, prompt 289, 47 reply rows) and its F stream (from 0, 336 rows)
+  seen: positions 0 to 303 hold the same tokens in a first stream (from 0, prompt 257, 47 reply rows) and its F stream (from 0, 304 rows)
+  pass 185 reply rows against their prompt-pass twins: relative L2 median 0.0887 (most 0.6436) at the same position, 0.9835 one position off
+seen: 1207 of 1207 prompt rows are the same bytes when the prompt is computed again with its reply behind it
+judge: 0 failures

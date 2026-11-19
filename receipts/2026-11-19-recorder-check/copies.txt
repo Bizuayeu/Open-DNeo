@@ -1,0 +1,9 @@
+1382081-0/0: 47 reply rows, 27 at the gate, 25 land their first token, longest match 32
+1382081-0/1: 47 reply rows, 27 at the gate, 25 land their first token, longest match 32
+1382081-0/2: 48 reply rows, 0 at the gate, 0 land their first token, longest match 4
+1382081-0/3: 47 reply rows, 0 at the gate, 0 land their first token, longest match 4
+1382081-0/4: 47 reply rows, 0 at the gate, 0 land their first token, longest match 3
+1382081-0/5: 47 reply rows, 0 at the gate, 0 land their first token, longest match 3
+1382081-0/6: 47 reply rows, 7 at the gate, 4 land their first token, longest match 11
+1382081-0/7: 47 reply rows, 7 at the gate, 4 land their first token, longest match 11
+copies: 8 streams, 377 reply rows, 68 at the gate (18.0%), 58 of them land their first token

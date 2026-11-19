@@ -3,8 +3,9 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.1.0, 2026-11-19): a plan and a survey. There are no weights yet, and nothing here shows that the
-approach works.** Each stage will add its tools, its numbers and what did not pay.
+**Status (0.2.0, 2026-11-19): a plan, a survey and the offline instrument. There are no weights yet, and nothing
+here shows that the approach works.** The instrument has run on real weights, and its tokens a round wait for the
+gate that compares it with serving. Each stage will add its tools, its numbers and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -63,13 +64,52 @@ Sources, revisions and the full numbers are in [docs/survey.md](docs/survey.md).
 ## Tools in this release
 
 ```sh
-python -m pip install -e .
+python -m pip install -e .                        # shapes, entrance and recording need numpy alone
+python -m pip install -e ".[torch]"               # greedy and score compute with torch
 open-dneo shapes incoai/GLM-5.3-Flash-DFlash2     # files, config and every tensor's shape
 open-dneo entrance incoai/GLM-5.3-Flash-DFlash2   # the diagonal share of its dense entrance
+open-dneo recording DIR                           # check what a server recorded with --record DIR
+open-dneo greedy DIR --target CHECKPOINT          # how much of a recording its target would have written
+open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # a DFlash2 drafter's tokens a round on it
 ```
 
-Both read a public Hugging Face repository by HTTP range requests, without credentials. `shapes` reads only the
-safetensors header. `entrance` fetches one tensor (160 MiB in this example) and needs a few gigabytes of memory.
+`shapes` and `entrance` read a public Hugging Face repository by HTTP range requests, without credentials. `shapes`
+reads only the safetensors header. `entrance` fetches one tensor (160 MiB in this example) and needs a few gigabytes
+of memory.
+
+`recording` reads the files a TensorFold server writes with `--record`: each stream's tokens, positions, kinds and
+tapped rows, and the target's best tokens where a request asked for logprobs. It checks every finished stream
+against what the recorder writes, totals the rows by layout, and exits with 1 if a stream is not sound. `--streams`
+lists each stream. From Python, `open_dneo.recording.open_stream` gives a stream's rows as arrays.
+
+`greedy` and `score` run on real weights: a recording, the target checkpoint's folder and, for `score`, the
+drafter's folder. They read GLM-5.3-Flash's tensor names, and a head stored plain or as MXFP8. A checkpoint folder
+needs its `config.json`, its index and the files that hold the embedding and the head.
+
+`greedy` multiplies the rows after the final norm by the target's head and counts, for a recording's reply tokens
+and its prompt tokens, how many are the token the target would write next. A reply decoded without sampling should
+be that all the way, which checks the head, its orientation and the tap before a drafter is scored against them.
+
+`score` takes every reply row as an anchor and runs the DFlash2 drafter on the block serving would build there, with
+the stream's earlier rows as its context. It cuts each chain of drafts where TensorFold's GLM lanes cut it and walks
+each reply twice. The first walk takes every round as the drafter's. The second takes the rounds as serving takes
+them for a stream decoded alone: where the stream's last tokens repeat eight or more of its earlier ones, a round
+verifies a copy of what followed in place of the drafter's chain. `--served` scores with the weights as serving
+holds them by default: the drafter's linears and the target's head at 4 bits, and the head's scores in bfloat16.
+`--max-tokens` gives the requests' limit of new tokens, which bounds the rounds near the end of a reply it cut.
+
+The second walk is the one gate G0 in the [plan](docs/plan.md) compares with serving. It has not been compared
+yet, and none of the instrument's tokens a round is published before that gate is read. It still differs from serving in
+two things. Serving chooses the drafts a reply's first round holds from measured round times; the report also
+gives the rounds if that round held one draft and if it held every draft. And the walk is over the tokens a
+recording holds, which can be one fewer than the reply's.
+
+The recording these two commands need: tap k is the target's state after k layers, for GLM the mean of its four
+residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the
+final norm. `greedy` reads that last tap, 45 for GLM-5.3-Flash. `score` reads the tap one above each of the
+drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above. TensorFold's `--record` gives no rows for
+GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in
+[receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md).
 
 ## Credits and licences
 
@@ -81,5 +121,7 @@ safetensors header. `entrance` fetches one tensor (160 MiB in this example) and 
 - [TensorFold](https://github.com/ashhart/TensorFold) (Apache-2.0): the engine, its recorder and its recipe for
   training a drafter.
 
-This release contains none of their code or weights. Open-DNeo is licensed under [Apache-2.0](LICENSE). It is not
-affiliated with the DNeo authors, Cerebras, incoai, Z.ai or the TensorFold maintainers.
+This release contains none of their weights and copies none of their files. Some modules were written to compute
+what their code computes; [NOTICE](NOTICE) names each module and its source. Open-DNeo is licensed under
+[Apache-2.0](LICENSE). It is not affiliated with the DNeo authors, Cerebras, incoai, Z.ai or the TensorFold
+maintainers.

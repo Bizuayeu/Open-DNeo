@@ -1,0 +1,5 @@
+f/8: reply 0 of 0 tokens the target's own, prompt 236 of 387
+f/9: reply 0 of 0 tokens the target's own, prompt 278 of 367
+f/10: reply 0 of 0 tokens the target's own, prompt 173 of 335
+f/11: reply 0 of 0 tokens the target's own, prompt 145 of 303
+streams 4, tap 45: reply 0 of 0 tokens the target's own, prompt 832 of 1392

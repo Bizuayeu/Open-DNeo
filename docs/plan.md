@@ -38,6 +38,13 @@ One rule of ours for the labels: within a block, the text's tokens are the targe
 the first position where the text and the target's argmax differ. Positions after that get a lower weight. Whether
 this helps is compared in Stage 2.
 
+Move 1 leaves a gap of its own. A drafter is trained on rows of a prompt pass, and it is served rows that verify
+passes computed over the cache. In the recorder's check the same positions computed both ways lay 9 to 11% apart
+at the four deeper taps, and the target's head picked the same tokens from both
+([receipts](../receipts/2026-11-19-recorder-check/README.md)). TensorFold's recipe reports about 1 to 5% on other
+targets and trains on both kinds of row. Stage 1 measures what the gap does to a drafter's proposals, before the
+pilot recording.
+
 ## Not doing
 
 | Idea | Why not |
@@ -52,8 +59,8 @@ this helps is compared in Stage 2.
 
 | Stage | What | Why | Exit | Estimate |
 |---|---|---|---|---|
-| 0 Tools | In a fork only: recording rows from GLM (prompt and reply rows, selectable tap layers, the target's best k per row). The offline instrument (DFlash2 and DNeo forwards in PyTorch, under serving's limits). The training script | To be able to measure | Replies have equal `token_sha` with and without recording. **G0** | 3-4 days of development |
-| 1 Pilot | An evaluation set (code, agent turns, chat, Japanese, prose; split from training by task; MTP's and DFlash2's tokens a round and round time taken first). A pilot prompt-pass recording of 0.5-1 million rows over a wide choice of layers. The layer probe. The bridge's step-0 score. Disk and training speed | To turn the bet into numbers | **G1** | 1-1.5 days |
+| 0 Tools | In a fork only: recording rows from GLM (prompt and reply rows, selectable tap layers, and the row after the final norm, from which the target's best k are computed offline). The offline instrument (DFlash2 and DNeo forwards in PyTorch, under serving's limits). The training script | To be able to measure | Replies have equal `token_sha` with and without recording. The instrument's forwards give the outputs of the public definitions | 3-4 days of development |
+| 1 Pilot | An evaluation set (code, agent turns, chat, Japanese, prose; split from training by task; MTP's and DFlash2's tokens a round and round time taken first). G0 on it, before anything else is scored. DFlash2's proposals from prompt-pass rows against those from reply rows of the same tokens. A pilot prompt-pass recording of 0.5-1 million rows over a wide choice of layers. The layer probe. The bridge's step-0 score. Disk and training speed | To turn the bet into numbers | **G0**, then **G1** | 1-1.5 days |
 | 2 Training | The main prompt-pass recording (45 million rows as a first size) and training. Arm A: DNeo's form, from DFlash2. Arm C: DFlash2 as it is, the control. Arm B if G1 is poor: DNeo's form with the entrance re-initialised. If the first run misses G2, a second run mixes in 1-2 million tokens of the target's own output | To decide whether a winning checkpoint exists | **G2** | Recording 8.1-8.8 hours of prompt passes, a night to a day with cooling pauses. Training: from Stage 1's measurement |
 | 3 Engine | A DNeo path in TensorFold's GLM family, without memory: loading, taps, context intake (the entrance matrix goes away), the mask, the head's chain. The ring, the convolutions, the split MLP and the 4-bit linears are reused | To serve it | The engine's drafts equal the PyTorch reference's at bf16. Replies have the `token_sha` of undrafted, alone and serial runs. Upstream's own gates | 4-6 days of development |
 | 4 Served | One binary, launches in A-B-B-A order | The verdict that matters | **G3** | 0.5-1 day |
@@ -61,7 +68,14 @@ this helps is compared in Stage 2.
 | 6 Release | Weights under Apache-2.0 with notices, and a proposal upstream, starting with an issue | To share it | | |
 
 A number that says whether a winning checkpoint exists (the end of Stage 2) is about 6-8 days out, and the served
-verdict about 11-15.
+verdict about 11-15. The recording times assume the prompt-pass speed of the default path. Recording takes its rows
+by another path, which computed 0.925 of the default path's prompt tokens a second in a first check, on prompts of
+about 2,000 tokens ([receipts](../receipts/2026-11-19-recorder-check/README.md)). At that rate the recording takes
+about 8% longer.
+
+Stage 0's two exit conditions were met on 2026-11-19. The recorder's check is in the same receipts, and the tests
+hold the instrument's forwards to the outputs of the public definitions (`tests/test_drafter.py`). The stage is not
+finished: its training script is still to be written.
 
 ## Gates
 
@@ -88,6 +102,64 @@ from what it measures: the spread of the evaluation set and the training speed.
 
 Stopping: if G0 fails after three fixes, or G2 is missed again by the second run, the work stops and the result is
 published as it is. If only arm C wins, the outcome is a better DFlash2 checkpoint and no engine change.
+
+### How G0 is measured
+
+Fixed on 2026-11-19, before the evaluation set existed and before either of the numbers it compares was taken.
+
+- **Serving.** The evaluation prompts go one at a time, as plain completions decoded greedily, to a server started
+  with `--drafter` naming the DFlash2 drafter at its default 4 bits. `TF_GLM_DFLASH2_LOG` is set high enough to log
+  every round's drafts. `TF_GLM_COPIES` stays unset, which keeps the opt-in root and context copies off, and
+  `TF_GLM_DRAFT_CONFIDENCE` stays unset, which leaves the chain's cut at 0.7. A launch whose log reports a restarted
+  DFlash2 context is not counted.
+- **A round is not always the drafter's.** Where a stream's last tokens repeat a run of at least 8 tokens from
+  earlier in the stream, and at least 2 tokens can be copied from what followed that run, the round verifies the
+  copy in place of the drafter's chain (`copyProposal` and `plan` in TensorFold's `zig/src/core/lanes/windows.zig`).
+  A reply's round count takes in every round, whatever drafted it.
+- **Serving's tokens a round.** A reply's first token comes from the prompt pass, and no round gives it. The
+  reply's `speculative.tokens_per_round` divides all of its tokens by its rounds, so it is not used as it is: a
+  reply counts `completion_tokens - 1` tokens over `speculative.rounds` rounds. A class's number is its replies'
+  tokens summed, over their rounds summed.
+- **Which launch is judged.** The first. A reply's rounds depend on times the engine measures, so they need not be
+  the same in every launch. The same binary is launched once more on the same prompts, and how far its number is
+  from the first is reported.
+- **The instrument's tokens a round.** The rows recorded for the same replies are scored with the weights as
+  serving holds them: the drafter's linears and the head at 4 bits, and the head's scores in bfloat16. Each reply
+  is walked over all of its tokens, a round being a copy where serving's rule gives one and the drafter's chain
+  elsewhere. The walk is given the request's `max_tokens`, which bounds a copy and the drafts a round asks for near
+  that limit. A class's number is again tokens summed over rounds summed.
+- **Not written yet.** `open-dneo score --served` prints this walk beside one that takes every round as the
+  drafter's. It walks the tokens a recording holds, where a reply's last token has a row only if the reply ended
+  inside a round. The walk over a reply's own tokens is written, and tested on its own, before the first number
+  from serving is read.
+- **Pass.** In every class the two numbers differ by 0.1 or less.
+- **Reported, not judged.** The instrument's number with the weights as stored, how often the drafts serving
+  logged at a position are the instrument's at that position, and serving's number in its second launch.
+- **A fix** is a change to how the instrument copies serving, made after its number missed. Three are allowed.
+  Correcting a misreading of the data, such as the wrong tensor or a reply paired with another's rows, is not a
+  fix; it is reported with the result.
+
+Where the instrument is known to differ from serving, each a candidate for a fix:
+
+- The drafts a reply's first round holds. Serving chooses their number from measured round times. The instrument
+  holds 4, which an engine that has measured nothing chooses. It is one round a reply, and the instrument's rounds
+  with a first round of 1 draft and of every draft, the least and the most serving can choose, are reported beside
+  it.
+- The instrument's products are float32. Serving keeps its rows in bfloat16.
+- Candidates with equal scores at the sixteenth place may be chosen differently, and bfloat16 scores make such ties
+  likelier.
+
+Serving also sizes a drafter's window by what its rows cost, and the instrument stops at the chain's cut. At the
+default cut that is no difference. A lone stream's round is priced at 76 ms and 4.1 ms a row more (`shared_costs` in
+TensorFold's `zig/src/families/glm/cuda_copy_policy.zig`), so a draft is kept where its chance is over 4.1/76 of the
+tokens expected without it, which are 1 for the first draft and 7 at most. A first draft's chance is 1/16 at the
+least, being the best share among 16 candidates, and a later draft that the cut kept has 0.7 or more. The first
+draft's margin is thin, 4.1/76 being 0.054 and 1/16 being 0.0625, so both prices are read again in the source of
+the server G0 runs on.
+
+Not checked yet: whether one launch can record rows and serve DFlash2 drafts together. If it cannot, the rows come
+from a second launch on the same prompts, and a reply is used only where its tokens are the same and its recorded
+context begins at the same row.
 
 ## Decisions so far (2026-11-19)
 

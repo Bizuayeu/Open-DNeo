@@ -3,7 +3,8 @@
 For anyone, human or agent, who changes this repository.
 
 - **Every push to `main` is a release.** Give it a version in `pyproject.toml`, `open_dneo/__init__.py` and
-  `CHANGELOG.md`. There is no Unreleased section.
+  `CHANGELOG.md`. There is no Unreleased section. A tag `vX.Y.Z` on that commit publishes its `CHANGELOG.md` section
+  as the GitHub release.
 - **One fact, one place.** `docs/plan.md` holds the goal, the stages and the gates. `docs/survey.md` and the later
   stage reports hold what was read and measured. The README points to them and repeats only the headline.
 - **A number needs a source.** Cite the table, the file or the command it came from, and read a table's column

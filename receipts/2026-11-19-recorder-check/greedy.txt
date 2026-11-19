@@ -1,0 +1,9 @@
+r/0: reply 47 of 47 tokens the target's own, prompt 189 of 340
+r/1: reply 47 of 47 tokens the target's own, prompt 189 of 340
+r/2: reply 48 of 48 tokens the target's own, prompt 230 of 319
+r/3: reply 47 of 47 tokens the target's own, prompt 230 of 319
+r/4: reply 46 of 47 tokens the target's own, prompt 127 of 288
+r/5: reply 46 of 47 tokens the target's own, prompt 127 of 288
+r/6: reply 47 of 47 tokens the target's own, prompt 98 of 256
+r/7: reply 47 of 47 tokens the target's own, prompt 98 of 256
+streams 8, tap 45: reply 375 of 377 tokens the target's own, prompt 1288 of 2406

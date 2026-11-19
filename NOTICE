@@ -6,4 +6,74 @@ Licensed under the Apache License, Version 2.0 (LICENSE).
 The receipts under receipts/ quote public metadata of two Hugging Face repositories,
 both published under Apache-2.0: the file list, config.json and tensor names of
 incoai/GLM-5.3-Flash-DFlash2 and of J-sandler/Qwen3-4B-DNeo. This project includes
-no code and no weights of either.
+no weights of either.
+
+open_dneo/drafter.py implements the two drafters' forward passes. It was written
+to compute what these public definitions compute, and its tests compare it with
+their outputs. No file of theirs is copied here:
+
+- z-lab/dflash, dflash/model.py, at 07ebd93db9f472af339b644bb70221ad8428328a.
+  MIT License, Copyright (c) 2026 Z Lab. DFlash2's layer, entrance, attention
+  mask and candidate selector.
+- J-sandler/Qwen3-4B-DNeo (Hugging Face), configuration_dneo.py, modeling_dneo.py
+  and reference.py, at 8451a2e8446c0bfa09be47623ff044d896540ec4, and J-sandler/DNeo,
+  src/dneo/runtime/dneo.py, at 8449a3ce891f6b3321efafc1e5c0c7e5c40e11c7.
+  MIT License, Copyright (c) 2025 sgl-project. DNeo's router, attention mask and
+  folded head.
+- Hugging Face Transformers, the Qwen3 modules those definitions build on (the
+  norm, the MLP, the rotary embedding). Apache License 2.0.
+
+tests/fixtures/ holds numbers those definitions computed with random parameters
+at a small size; tools/reference/ holds the scripts that ran them and how to
+fetch the definitions.
+
+These modules read what TensorFold writes, or compute what it computes. They were
+written from its source and documents at
+e3fb56cb09061a979cb02080601fc6f7870d3362. No file of TensorFold's is copied here:
+
+- open_dneo/recording.py: the recorder's files, from
+  zig/src/core/lanes/recorder.zig and docs/recipes/training-a-drafter.md.
+- open_dneo/rounds.py: where a chain of DFlash2 drafts is cut, from draftBlock in
+  zig/src/families/glm/cuda_lanes.zig; the rounds a stream decoded alone takes,
+  from plan and copyProposal in zig/src/core/lanes/windows.zig, the round in
+  engine.zig, and the drafts asked in depth.zig and open.zig.
+- open_dneo/copies.py: the lookup that proposes a copy of a stream's earlier
+  tokens, from SuffixLookup in zig/src/core/lanes/proposer.zig. Three of its tests
+  use the cases of that file's own tests.
+- open_dneo/drafter.py: a draft's chance among its candidates, from select in
+  zig/src/families/glm/dflash_select.zig.
+- open_dneo/score.py: the block and the context serving's DFlash2 drafter holds
+  at a round, and its scores in bfloat16, from zig/src/families/glm/dflash.zig
+  and dflash_block.zig.
+- open_dneo/served.py: a 4-bit linear's values, from tf_glm_quantize4 in
+  zig/kernels/cuda/glm_quant.cu, and which of the drafter's linears hold them,
+  from zig/src/families/glm/dflash_load.zig.
+- open_dneo/weights.py: an MXFP8 projection's values, from
+  zig/src/families/glm/cuda_mxfp8.zig, and an E4M3 code's, from
+  zig/src/core/quant/fp8.zig.
+
+Those files are under the Apache License, Version 2.0, with this notice:
+
+  TensorFold
+  Copyright 2026 TensorFold contributors
+  https://github.com/ashhart/TensorFold
+
+The MIT License, under which the first two are published:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -1,14 +1,30 @@
-"""The command line: `open-dneo shapes REPO` and `open-dneo entrance REPO`."""
+"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score."""
 
 from __future__ import annotations
 
 import argparse
+import importlib
 import sys
+from pathlib import Path
 
-from . import __version__, entrance, shapes
+from . import __version__, entrance, recording, shapes
+
+
+def _with_torch(name: str):
+    """A module of this package that computes with torch, loaded when it is used.
+
+    The other commands run without torch installed.
+    """
+    try:
+        return importlib.import_module(f"{__package__}.{name}")
+    except ModuleNotFoundError as error:
+        if error.name != "torch":
+            raise
+        sys.exit("this command computes with torch: pip install 'open-dneo[torch]'")
 
 
 def parser() -> argparse.ArgumentParser:
+    """Each command sets `run`: its arguments to its report's lines and soundness."""
     top = argparse.ArgumentParser(prog="open-dneo", description=__doc__)
     top.add_argument("--version", action="version", version=__version__)
     commands = top.add_subparsers(dest="command", required=True)
@@ -18,6 +34,7 @@ def parser() -> argparse.ArgumentParser:
     )
     listing.add_argument("repo", help="a Hub model repository, as OWNER/NAME")
     listing.add_argument("--revision", default="main")
+    listing.set_defaults(run=lambda a: (shapes.report(a.repo, a.revision), True))
 
     encoder = commands.add_parser(
         "entrance", help="the diagonal share of a dense feature encoder"
@@ -25,19 +42,77 @@ def parser() -> argparse.ArgumentParser:
     encoder.add_argument("repo", help="a Hub model repository, as OWNER/NAME")
     encoder.add_argument("--revision", default="main")
     encoder.add_argument("--tensor", default="fc.weight")
+    encoder.set_defaults(
+        run=lambda a: (entrance.report(a.repo, a.revision, a.tensor), True)
+    )
+
+    recorded = commands.add_parser(
+        "recording", help="check the rows a TensorFold server recorded with --record"
+    )
+    recorded.add_argument(
+        "folder", help="the --record folder, or any folder of streams"
+    )
+    recorded.add_argument("--streams", action="store_true", help="list every stream")
+    recorded.set_defaults(run=lambda a: recording.report(Path(a.folder), a.streams))
+
+    own = commands.add_parser(
+        "greedy", help="how much of a recording its target would have written itself"
+    )
+    scored = commands.add_parser(
+        "score", help="a DFlash2 drafter's tokens a round over recorded replies"
+    )
+    scored.add_argument(
+        "--drafter",
+        required=True,
+        help="the drafter's folder: config.json and model.safetensors",
+    )
+    scored.add_argument(
+        "--served",
+        action="store_true",
+        help="the drafter's linears and the head at 4 bits and the head's scores in"
+        " bfloat16, as serving holds them",
+    )
+    scored.add_argument(
+        "--max-tokens",
+        type=int,
+        help="the requests' limit of new tokens, where the replies were cut by it",
+    )
+    for command in (own, scored):
+        command.add_argument(
+            "folder", help="the --record folder, or any folder of streams"
+        )
+        command.add_argument(
+            "--target", required=True, help="the target checkpoint's folder"
+        )
+        command.add_argument("--device", default="cpu", help="where torch computes")
+        command.add_argument("--streams", action="store_true", help="list every stream")
+    own.set_defaults(
+        run=lambda a: _with_torch("greedy").report(
+            Path(a.folder), Path(a.target), a.device, a.streams
+        )
+    )
+    scored.set_defaults(
+        run=lambda a: _with_torch("score").report(
+            Path(a.folder),
+            Path(a.drafter),
+            Path(a.target),
+            a.device,
+            a.streams,
+            a.served,
+            a.max_tokens,
+        )
+    )
     return top
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Print a command's report; 1 if the report found something wrong."""
     args = parser().parse_args(argv)
-    if args.command == "shapes":
-        lines = shapes.report(args.repo, args.revision)
-    else:
-        lines = entrance.report(args.repo, args.revision, args.tensor)
+    lines, sound = args.run(args)
     # Bytes, so that a saved report is UTF-8 with LF on every platform.
     sys.stdout.buffer.write(("\n".join(lines) + "\n").encode("utf-8"))
     sys.stdout.buffer.flush()
-    return 0
+    return 0 if sound else 1
 
 
 if __name__ == "__main__":
