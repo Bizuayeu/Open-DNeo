@@ -1,0 +1,35 @@
+[build-system]
+# 77 is the first setuptools that reads `license` as an SPDX expression (PEP 639).
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-dneo"
+version = "0.1.0"
+description = "Tools for making DNeo drafter weights from rows a serving engine records"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+dependencies = ["numpy>=2.0"]
+
+[project.optional-dependencies]
+# Exact, the versions this release was checked with: a new formatter cannot turn main red.
+dev = ["pytest==8.4.2", "ruff==0.17.1"]
+
+[project.scripts]
+open-dneo = "open_dneo.__main__:main"
+
+[tool.setuptools]
+packages = ["open_dneo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "BLE", "PLW1510"]

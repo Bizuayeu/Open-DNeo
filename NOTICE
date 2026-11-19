@@ -1,0 +1,9 @@
+Open-DNeo
+Copyright 2026 the project contributors.
+
+Licensed under the Apache License, Version 2.0 (LICENSE).
+
+The receipts under receipts/ quote public metadata of two Hugging Face repositories,
+both published under Apache-2.0: the file list, config.json and tensor names of
+incoai/GLM-5.3-Flash-DFlash2 and of J-sandler/Qwen3-4B-DNeo. This project includes
+no code and no weights of either.

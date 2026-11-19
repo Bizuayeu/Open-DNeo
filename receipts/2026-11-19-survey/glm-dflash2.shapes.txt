@@ -1,0 +1,152 @@
+repo incoai/GLM-5.3-Flash-DFlash2 commit 6cc6c481eee930a5139619ed919f78726371adbc
+license apache-2.0 base_model ['zai-org/GLM-5.3-Flash']
+file .gitattributes 116
+file README.md 2396
+file assets/dflash2-figure.png 286889
+file config.json 1273
+file model.safetensors 2342169800
+== config.json
+{
+  "architectures": [
+    "DFlash2DraftModel"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": null,
+  "dflash_config": {
+    "block_size": 8,
+    "conv_group_size": 16,
+    "conv_kernel_size": 2,
+    "mask_token_id": 154856,
+    "selector_rank": 256,
+    "selector_top_k": 16,
+    "target_layer_ids": [
+      5,
+      14,
+      24,
+      33,
+      42
+    ]
+  },
+  "dtype": "bfloat16",
+  "eos_token_id": [
+    154820,
+    154827,
+    154829
+  ],
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 12288,
+  "is_causal": false,
+  "layer_types": [
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention"
+  ],
+  "max_position_embeddings": 1048576,
+  "max_window_layers": 5,
+  "model_type": "qwen3",
+  "num_attention_heads": 32,
+  "num_hidden_layers": 5,
+  "num_key_value_heads": 8,
+  "num_target_layers": 45,
+  "pad_token_id": 154820,
+  "rms_norm_eps": 1e-05,
+  "rope_parameters": {
+    "rope_theta": 10000.0,
+    "rope_type": "default"
+  },
+  "sliding_window": 2048,
+  "tie_word_embeddings": false,
+  "transformers_version": "5.7.0",
+  "use_cache": false,
+  "use_sliding_window": true,
+  "vocab_size": 154880
+}
+== model.safetensors: 81 tensors
+  candidate_selector.hidden_projection.weight                              BF16  [256, 4096]
+  candidate_selector.predecessor_codebook                                  BF16  [154880, 256]
+  candidate_selector.successor_codebook                                    BF16  [154880, 256]
+  fc.weight                                                                BF16  [4096, 20480]
+  hidden_norm.weight                                                       BF16  [4096]
+  layers.0.attention_conv.base_kernel                                      BF16  [2, 2, 4096]
+  layers.0.attention_conv.kernel_projection.weight                         BF16  [1024, 4096]
+  layers.0.input_layernorm.weight                                          BF16  [4096]
+  layers.0.mlp.down_proj.weight                                            BF16  [4096, 12288]
+  layers.0.mlp.gate_proj.weight                                            BF16  [12288, 4096]
+  layers.0.mlp.up_proj.weight                                              BF16  [12288, 4096]
+  layers.0.mlp_conv.base_kernel                                            BF16  [2, 2, 4096]
+  layers.0.mlp_conv.kernel_projection.weight                               BF16  [1024, 4096]
+  layers.0.post_attention_layernorm.weight                                 BF16  [4096]
+  layers.0.self_attn.k_norm.weight                                         BF16  [128]
+  layers.0.self_attn.k_proj.weight                                         BF16  [1024, 4096]
+  layers.0.self_attn.o_proj.weight                                         BF16  [4096, 4096]
+  layers.0.self_attn.q_norm.weight                                         BF16  [128]
+  layers.0.self_attn.q_proj.weight                                         BF16  [4096, 4096]
+  layers.0.self_attn.v_proj.weight                                         BF16  [1024, 4096]
+  layers.1.attention_conv.base_kernel                                      BF16  [2, 2, 4096]
+  layers.1.attention_conv.kernel_projection.weight                         BF16  [1024, 4096]
+  layers.1.input_layernorm.weight                                          BF16  [4096]
+  layers.1.mlp.down_proj.weight                                            BF16  [4096, 12288]
+  layers.1.mlp.gate_proj.weight                                            BF16  [12288, 4096]
+  layers.1.mlp.up_proj.weight                                              BF16  [12288, 4096]
+  layers.1.mlp_conv.base_kernel                                            BF16  [2, 2, 4096]
+  layers.1.mlp_conv.kernel_projection.weight                               BF16  [1024, 4096]
+  layers.1.post_attention_layernorm.weight                                 BF16  [4096]
+  layers.1.self_attn.k_norm.weight                                         BF16  [128]
+  layers.1.self_attn.k_proj.weight                                         BF16  [1024, 4096]
+  layers.1.self_attn.o_proj.weight                                         BF16  [4096, 4096]
+  layers.1.self_attn.q_norm.weight                                         BF16  [128]
+  layers.1.self_attn.q_proj.weight                                         BF16  [4096, 4096]
+  layers.1.self_attn.v_proj.weight                                         BF16  [1024, 4096]
+  layers.2.attention_conv.base_kernel                                      BF16  [2, 2, 4096]
+  layers.2.attention_conv.kernel_projection.weight                         BF16  [1024, 4096]
+  layers.2.input_layernorm.weight                                          BF16  [4096]
+  layers.2.mlp.down_proj.weight                                            BF16  [4096, 12288]
+  layers.2.mlp.gate_proj.weight                                            BF16  [12288, 4096]
+  layers.2.mlp.up_proj.weight                                              BF16  [12288, 4096]
+  layers.2.mlp_conv.base_kernel                                            BF16  [2, 2, 4096]
+  layers.2.mlp_conv.kernel_projection.weight                               BF16  [1024, 4096]
+  layers.2.post_attention_layernorm.weight                                 BF16  [4096]
+  layers.2.self_attn.k_norm.weight                                         BF16  [128]
+  layers.2.self_attn.k_proj.weight                                         BF16  [1024, 4096]
+  layers.2.self_attn.o_proj.weight                                         BF16  [4096, 4096]
+  layers.2.self_attn.q_norm.weight                                         BF16  [128]
+  layers.2.self_attn.q_proj.weight                                         BF16  [4096, 4096]
+  layers.2.self_attn.v_proj.weight                                         BF16  [1024, 4096]
+  layers.3.attention_conv.base_kernel                                      BF16  [2, 2, 4096]
+  layers.3.attention_conv.kernel_projection.weight                         BF16  [1024, 4096]
+  layers.3.input_layernorm.weight                                          BF16  [4096]
+  layers.3.mlp.down_proj.weight                                            BF16  [4096, 12288]
+  layers.3.mlp.gate_proj.weight                                            BF16  [12288, 4096]
+  layers.3.mlp.up_proj.weight                                              BF16  [12288, 4096]
+  layers.3.mlp_conv.base_kernel                                            BF16  [2, 2, 4096]
+  layers.3.mlp_conv.kernel_projection.weight                               BF16  [1024, 4096]
+  layers.3.post_attention_layernorm.weight                                 BF16  [4096]
+  layers.3.self_attn.k_norm.weight                                         BF16  [128]
+  layers.3.self_attn.k_proj.weight                                         BF16  [1024, 4096]
+  layers.3.self_attn.o_proj.weight                                         BF16  [4096, 4096]
+  layers.3.self_attn.q_norm.weight                                         BF16  [128]
+  layers.3.self_attn.q_proj.weight                                         BF16  [4096, 4096]
+  layers.3.self_attn.v_proj.weight                                         BF16  [1024, 4096]
+  layers.4.attention_conv.base_kernel                                      BF16  [2, 2, 4096]
+  layers.4.attention_conv.kernel_projection.weight                         BF16  [1024, 4096]
+  layers.4.input_layernorm.weight                                          BF16  [4096]
+  layers.4.mlp.down_proj.weight                                            BF16  [4096, 12288]
+  layers.4.mlp.gate_proj.weight                                            BF16  [12288, 4096]
+  layers.4.mlp.up_proj.weight                                              BF16  [12288, 4096]
+  layers.4.mlp_conv.base_kernel                                            BF16  [2, 2, 4096]
+  layers.4.mlp_conv.kernel_projection.weight                               BF16  [1024, 4096]
+  layers.4.post_attention_layernorm.weight                                 BF16  [4096]
+  layers.4.self_attn.k_norm.weight                                         BF16  [128]
+  layers.4.self_attn.k_proj.weight                                         BF16  [1024, 4096]
+  layers.4.self_attn.o_proj.weight                                         BF16  [4096, 4096]
+  layers.4.self_attn.q_norm.weight                                         BF16  [128]
+  layers.4.self_attn.q_proj.weight                                         BF16  [4096, 4096]
+  layers.4.self_attn.v_proj.weight                                         BF16  [1024, 4096]
+  norm.weight                                                              BF16  [4096]
+  total parameters 1171080448
