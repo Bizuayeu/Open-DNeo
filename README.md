@@ -3,9 +3,10 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.2.0, 2026-11-19): a plan, a survey and the offline instrument. There are no weights yet, and nothing
-here shows that the approach works.** The instrument has run on real weights, and its tokens a round wait for the
-gate that compares it with serving. Each stage will add its tools, its numbers and what did not pay.
+**Status (0.3.0, 2026-11-20): a plan, a survey and an offline instrument that counts as serving does. There are no
+weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
+0.013 of serving's in every class of the evaluation set's open half
+([receipts](receipts/2026-11-20-g0/README.md)). Each stage will add its tools, its numbers and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -98,11 +99,19 @@ verifies a copy of what followed in place of the drafter's chain. `--served` sco
 holds them by default: the drafter's linears and the target's head at 4 bits, and the head's scores in bfloat16.
 `--max-tokens` gives the requests' limit of new tokens, which bounds the rounds near the end of a reply it cut.
 
-The second walk is the one gate G0 in the [plan](docs/plan.md) compares with serving. It has not been compared
-yet, and none of the instrument's tokens a round is published before that gate is read. It still differs from serving in
-two things. Serving chooses the drafts a reply's first round holds from measured round times; the report also
-gives the rounds if that round held one draft and if it held every draft. And the walk is over the tokens a
-recording holds, which can be one fewer than the reply's.
+`--run RUN` reads a run file (`open_dneo.runs`): a JSON line a request, with the prompt's and the reply's token ids,
+its `max_tokens` and serving's rounds. Each request is paired with the stream that recorded it and walked over its
+whole prompt and reply, to its own limit, so a stream that begins after the prompt's start, where the server
+resumed a stored prefix, still finds copies in the prompt's head. The report sets serving's tokens a round beside
+the instrument's, class by class. With it, `--drafts-log LOG` reads the DFlash2 rounds a TensorFold server logs
+with `TF_GLM_DFLASH2_LOG` and counts, class by class, the rounds whose first draft is the instrument's at the same
+anchor, the drafts that agree from the first on, and the rounds whose every draft does.
+
+The second walk is the one gate G0 in the [plan](docs/plan.md) compares with serving. With `--run` and the weights
+as served it agreed within 0.013 in every class ([receipts/2026-11-20-g0](receipts/2026-11-20-g0/README.md)). It
+still differs from serving in two things. Serving chooses the drafts a reply's first round holds from measured
+round times; the report also gives the rounds if that round held one draft and if it held every draft. And without
+`--run` the walk is over the tokens a recording holds, which can be one fewer than the reply's.
 
 The recording these two commands need: tap k is the target's state after k layers, for GLM the mean of its four
 residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the

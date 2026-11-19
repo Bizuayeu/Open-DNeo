@@ -51,6 +51,10 @@ e3fb56cb09061a979cb02080601fc6f7870d3362. No file of TensorFold's is copied here
 - open_dneo/weights.py: an MXFP8 projection's values, from
   zig/src/families/glm/cuda_mxfp8.zig, and an E4M3 code's, from
   zig/src/core/quant/fp8.zig.
+- tools/oracle/open_dneo_oracle_test.zig: a test to be placed in TensorFold's
+  tree, which runs its lane core (zig/src/core/lanes) with GLM's facts from
+  zig/src/families/glm/cuda_lanes.zig and cuda_copy_policy.zig.
+  tests/fixtures/lane_core_rounds.jsonl holds the rounds it wrote.
 
 Those files are under the Apache License, Version 2.0, with this notice:
 

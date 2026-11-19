@@ -105,11 +105,19 @@ published as it is. If only arm C wins, the outcome is a better DFlash2 checkpoi
 
 ### How G0 is measured
 
-Fixed on 2026-11-19, before the evaluation set existed and before either of the numbers it compares was taken.
+Fixed on 2026-11-19, before the evaluation set existed and before either of the numbers it compares was taken. Made
+exact later that day, after the set was built and before serving's first number on it was read: the set's sealed
+half, the route the prompts take, which launch is judged and what its second launch differs in, and the walk over
+whole replies.
 
-- **Serving.** The evaluation prompts go one at a time, as plain completions decoded greedily, to a server started
-  with `--drafter` naming the DFlash2 drafter at its default 4 bits. `TF_GLM_DFLASH2_LOG` is set high enough to log
-  every round's drafts. `TF_GLM_COPIES` stays unset, which keeps the opt-in root and context copies off, and
+- **The set.** 64 prompts in each of five classes (code, agent turns, chat, Japanese chat, prose), drawn by fixed
+  rules from public datasets, and as many again drawn alike and sealed. G0, G1 and comparisons during training read
+  the open half. The sealed half is not served, scored or read before G2, which is read on it.
+- **Serving.** The evaluation prompts go one at a time, decoded greedily, to a server started with `--drafter`
+  naming the DFlash2 drafter at its default 4 bits. Each prompt is its messages under the chat template with thinking
+  off, sent as token ids to the completions route where those ids are the ones the chat route runs for the same
+  messages, and to the chat route where they are not. `TF_GLM_DFLASH2_LOG` is set high enough to log every round's
+  drafts. `TF_GLM_COPIES` stays unset, which keeps the opt-in root and context copies off, and
   `TF_GLM_DRAFT_CONFIDENCE` stays unset, which leaves the chain's cut at 0.7. A launch whose log reports a restarted
   DFlash2 context is not counted.
 - **A round is not always the drafter's.** Where a stream's last tokens repeat a run of at least 8 tokens from
@@ -120,19 +128,26 @@ Fixed on 2026-11-19, before the evaluation set existed and before either of the 
   reply's `speculative.tokens_per_round` divides all of its tokens by its rounds, so it is not used as it is: a
   reply counts `completion_tokens - 1` tokens over `speculative.rounds` rounds. A class's number is its replies'
   tokens summed, over their rounds summed.
-- **Which launch is judged.** The first. A reply's rounds depend on times the engine measures, so they need not be
-  the same in every launch. The same binary is launched once more on the same prompts, and how far its number is
-  from the first is reported.
+- **Which launch is judged.** The first counted launch with the drafter that serves the whole open half and records
+  its rows. Where that launch is not counted, or does not serve every prompt, it is launched again, and no launch
+  without rows is judged in its place. A launch without the drafter runs before it, to find which route gives the
+  chat route's ids, and is not counted. A reply's rounds depend on times the engine measures, so they need not be the
+  same in every launch. The same binary is launched once more with the drafter on the same prompts, and how far its
+  number is from the first is reported. That second launch records no rows, so the round times it measures can
+  differ for that reason too.
 - **The instrument's tokens a round.** The rows recorded for the same replies are scored with the weights as
   serving holds them: the drafter's linears and the head at 4 bits, and the head's scores in bfloat16. Each reply
   is walked over all of its tokens, a round being a copy where serving's rule gives one and the drafter's chain
   elsewhere. The walk is given the request's `max_tokens`, which bounds a copy and the drafts a round asks for near
   that limit. A class's number is again tokens summed over rounds summed.
-- **Not written yet.** `open-dneo score --served` prints this walk beside one that takes every round as the
-  drafter's. It walks the tokens a recording holds, where a reply's last token has a row only if the reply ended
-  inside a round. The walk over a reply's own tokens is written, and tested on its own, before the first number
-  from serving is read.
+- **Whole replies.** `open-dneo score --served --run RUN` pairs each request of a run file (the prompt's and the
+  reply's token ids, `max_tokens`, serving's rounds) with the stream that recorded it, and walks the request's whole
+  prompt and reply to its own `max_tokens`. A stream can begin after the prompt's start, where the server resumed a
+  stored prefix, so the prompt the walk looks for copies in is the run file's. It prints serving's number beside the
+  instrument's, class by class. The walk's rounds are the lane core's own on 16 cases (`tests/test_lane_core.py`).
 - **Pass.** In every class the two numbers differ by 0.1 or less.
+- **Result (2026-11-20).** It passes: the largest gap is 0.013, in the agent class, with no fix
+  ([receipts/2026-11-20-g0](../receipts/2026-11-20-g0/README.md)).
 - **Reported, not judged.** The instrument's number with the weights as stored, how often the drafts serving
   logged at a position are the instrument's at that position, and serving's number in its second launch.
 - **A fix** is a change to how the instrument copies serving, made after its number missed. Three are allowed.
@@ -154,12 +169,12 @@ default cut that is no difference. A lone stream's round is priced at 76 ms and 
 TensorFold's `zig/src/families/glm/cuda_copy_policy.zig`), so a draft is kept where its chance is over 4.1/76 of the
 tokens expected without it, which are 1 for the first draft and 7 at most. A first draft's chance is 1/16 at the
 least, being the best share among 16 candidates, and a later draft that the cut kept has 0.7 or more. The first
-draft's margin is thin, 4.1/76 being 0.054 and 1/16 being 0.0625, so both prices are read again in the source of
-the server G0 runs on.
+draft's margin is thin, 4.1/76 being 0.054 and 1/16 being 0.0625, so both prices were read again in the source of
+the server G0 ran on, TensorFold `e3fb56cb09`, whose prices the recorder's commit leaves as they are: they are the
+same.
 
-Not checked yet: whether one launch can record rows and serve DFlash2 drafts together. If it cannot, the rows come
-from a second launch on the same prompts, and a reply is used only where its tokens are the same and its recorded
-context begins at the same row.
+Checked on 2026-11-20: one launch records rows and serves DFlash2 drafts together, and its replies are the same
+tokens as those of launches that record nothing, so the rows G0 read came from the judged launch itself.
 
 ## Decisions so far (2026-11-19)
 

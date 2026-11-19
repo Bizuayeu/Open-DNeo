@@ -11,7 +11,8 @@ round the drafter's, and `lanes` as `rounds.served` does, some rounds copies.
 A stream's rows begin at `first_row`: a prompt that resumed from kept state has
 no rows before it, and serving's drafter had none either, in that launch. The
 proposals carry `first_row`, so that two launches are compared only where their
-contexts begin at the same row.
+contexts begin at the same row. Serving's copies still look in the whole prompt,
+which `lanes` takes where the request's tokens are known.
 
 `report` can score with the weights as serving holds them (`served`): its 4-bit
 linears and its 4-bit copy of the target's head, whose scores it keeps in bfloat16.
@@ -27,7 +28,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from . import drafter, recording, rounds, served, weights
+from . import drafter, logged, recording, rounds, runs, served, weights
 
 # Anchors a pass unless told otherwise: at a vocabulary of 154,880 and 7 drafts an
 # anchor, the scores of 32 anchors are 139 MB of float32, and a head holds a few
@@ -201,9 +202,18 @@ def steps(
     tokens where they are known, or `found.tokens` to count without the last.
     ValueError if `tokens` are not the stream's with at most one more.
     """
-    anchors = found.tokens.tolist()
+
+    def propose(at: int) -> tuple[list[int], list[float]]:
+        return found.drafts[at].tolist(), found.chances[at].tolist()
+
+    return rounds.walk(_reply(tokens, found), propose, cut)
+
+
+def _reply(tokens: Sequence[int], found: Proposals) -> list[int]:
+    """`tokens` as a reply over `found`: the anchors' tokens, with at most one more."""
+    tokens, anchors = list(tokens), found.tokens.tolist()
     shared = min(len(tokens), len(anchors))
-    if list(tokens[:shared]) != anchors[:shared]:
+    if tokens[:shared] != anchors[:shared]:
         at = next(i for i in range(shared) if tokens[i] != anchors[i])
         raise ValueError(
             f"reply token {at} is {tokens[at]}, and the stream's is {anchors[at]}"
@@ -213,11 +223,7 @@ def steps(
             f"the reply has {len(tokens)} tokens, and the stream rows for"
             f" {len(anchors)}: more than one is without a row"
         )
-
-    def propose(at: int) -> tuple[list[int], list[float]]:
-        return found.drafts[at].tolist(), found.chances[at].tolist()
-
-    return rounds.walk(tokens, propose, cut)
+    return tokens
 
 
 def lanes(
@@ -225,24 +231,48 @@ def lanes(
     found: Proposals,
     max_new: int | None = None,
     first_depth: int = rounds.Lanes.first_depth,
+    *,
+    prompt: Sequence[int] | None = None,
+    reply: Sequence[int] | None = None,
 ) -> list[rounds.Round]:
     """The rounds serving takes over a stream's reply (`rounds.served`), copies included.
 
-    The prompt is the stream's own rows before the reply: where they do not begin
-    at row 0, the copies of what came before are missed. The drafts a round asks
-    for are the drafter's block less its anchor; `max_new` is the request's limit
-    of new tokens, where the replies were cut by it. `first_depth` is the drafts
-    the first round holds, which serving chooses from measured round times.
+    Serving looks for a copy in the request's whole prompt. `prompt` gives it;
+    without it the prompt is the stream's own rows before the reply, and where
+    they do not begin at row 0 the copies of what came before are missed. The
+    reply is the stream's reply rows, or `reply`, the reply's own tokens with the
+    last one a row may lack (`steps`). The drafts a round asks for are the
+    drafter's block less its anchor; `max_new` is the request's limit of new
+    tokens, where the replies were cut by it. `first_depth` is the drafts the
+    first round holds, which serving chooses from measured round times.
+    ValueError if `prompt` does not end in the stream's prompt rows or is not as
+    long as its prompt, or `reply` is not the stream's (`steps`).
     """
-    prompt = np.asarray(stream.tok, np.int64)[np.asarray(stream.kind) == 0]
+    summary = stream.summary
+    own = np.asarray(stream.tok, np.int64)[np.asarray(stream.kind) == 0].tolist()
+    if prompt is None:
+        prompt = own
+    else:
+        prompt = list(prompt)
+        if len(prompt) != summary.prompt_len:
+            raise ValueError(
+                f"the prompt has {len(prompt)} tokens, and the stream's"
+                f" {summary.prompt_len}"
+            )
+        tail = prompt[summary.first_row :]
+        if tail != own:
+            at = next(i for i in range(len(own)) if tail[i] != own[i])
+            raise ValueError(
+                f"prompt token {summary.first_row + at} is {tail[at]},"
+                f" and the stream's is {own[at]}"
+            )
+    tokens = found.tokens.tolist() if reply is None else _reply(reply, found)
 
     def propose(at: int) -> tuple[list[int], list[float]]:
         return found.drafts[at].tolist(), found.chances[at].tolist()
 
     facts = rounds.Lanes(drafts=found.drafts.shape[1], first_depth=first_depth)
-    return rounds.served(
-        prompt.tolist(), found.tokens.tolist(), propose, facts, max_new
-    )
+    return rounds.served(prompt, tokens, propose, facts, max_new)
 
 
 def report(
@@ -253,6 +283,8 @@ def report(
     each: bool = False,
     as_served: bool = False,
     max_new: int | None = None,
+    run: Path | None = None,
+    drafts_log: Path | None = None,
 ) -> tuple[list[str], bool]:
     """A DFlash2 drafter's rounds over the replies recorded under `root`.
 
@@ -266,6 +298,16 @@ def report(
     (`lanes`, with `max_new`). `each` also lists every stream. Not sound if no
     finished stream could be walked, one could not be read, or the drafter's file
     holds tensors that are not read here.
+
+    With `run` (a run file, `runs`), each of its requests is paired with its stream
+    and walked as serving takes it over the request's whole prompt and reply, to the
+    request's own limit of new tokens. A class's line sets serving's tokens a round
+    beside the instrument's, as G0 compares them. Not sound if a request has no
+    stream or serving gave no rounds.
+
+    With a run, `drafts_log` (a server's log with its DFlash2 rounds, `logged`)
+    sets the drafts serving logged beside the instrument's at the same anchors, by
+    class. Not sound if a logged anchor is not its stream's token.
     """
     config = json.loads((drafter_folder / "config.json").read_text(encoding="utf-8"))
     model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
@@ -282,6 +324,15 @@ def report(
         ]
     model, reading = model.to(device), Reading.dflash2(config)
     lines += [f"the drafter's {name} is not read" for name in unread]
+    if drafts_log is not None and run is None:
+        return lines + ["a drafts log is read beside a run file"], False
+    if run is not None:
+        if max_new is not None:
+            return lines + [
+                "a run gives each request's own limit of new tokens: not --max-tokens"
+            ], False
+        more, whole = _by_run(root, run, model, target, reading, drafts_log)
+        return lines + more, whole and not unread
     walked, late, alone, taken, sound = 0, 0, [], [], not unread
     least = most = 0  # rounds with copies if a reply's first round held 1 draft, or all
     for base in recording.find(root):
@@ -322,6 +373,103 @@ def report(
             " it are missed"
         )
     return lines, sound and walked > 0
+
+
+def _by_run(
+    root: Path,
+    run: Path,
+    model: drafter.Drafter,
+    target: Target,
+    reading: Reading,
+    drafts_log: Path | None = None,
+) -> tuple[list[str], bool]:
+    """The lines of `report` with a run: serving beside the instrument, by class."""
+    named = [
+        (base.relative_to(root).as_posix(), base)
+        for base in recording.find(root)
+        if recording.beside(base, ".json").exists()
+    ]
+    opened = [(name, recording.open_stream(base)) for name, base in named]
+    requests = runs.read(run)
+    paired = runs.pair(requests, opened)
+    streams = dict(opened)
+    found = sum(name is not None for _, name in paired)
+    lines = [f"run: {len(requests)} requests, {found} paired with a stream"]
+    sound = found == len(requests) > 0
+    classes: dict[str, list] = {}
+    logs: list[list[logged.Logged]] = [[] for _ in requests]
+    astray, agreed = 0, {}
+    if drafts_log is not None:
+        rounds_logged = logged.read(drafts_log)
+        logs, astray = logged.assign(rounds_logged, requests)
+    for (request, name), its_log in zip(paired, logs, strict=True):
+        if name is None:
+            lines.append(f"{request.id}: no stream holds its prompt and reply")
+            continue
+        held = streams[name]
+        proposed = proposals(model, target, held, reading)
+        if drafts_log is not None:
+            try:
+                agreed[request.klass] = agreed.get(
+                    request.klass, logged.Agreement()
+                ) + logged.compare(
+                    its_log, proposed.positions, proposed.tokens, proposed.drafts
+                )
+            except ValueError as error:
+                lines.append(f"{request.id}: {error}")
+                sound = False
+
+        def walk(depth: int = rounds.Lanes.first_depth) -> list[rounds.Round]:
+            return lanes(
+                held,
+                proposed,
+                request.max_tokens,
+                depth,
+                prompt=request.prompt,
+                reply=request.reply,
+            )
+
+        lane = walk()
+        classes.setdefault(request.klass, []).append(
+            (request, lane, len(walk(1)), len(walk(proposed.drafts.shape[1])))
+        )
+    for klass, taken in classes.items():
+        try:
+            tokens, said = runs.served([request for request, *_ in taken])
+        except ValueError as error:
+            lines.append(f"{klass}: {error}")
+            sound = False
+            continue
+        mine = sum(r.tokens for _, lane, *_ in taken for r in lane)
+        walked = sum(len(lane) for _, lane, *_ in taken)
+        serving, instrument = tokens / said, mine / walked
+        lines.append(
+            f"{klass}: {len(taken)} replies; serving {tokens} tokens over {said} rounds,"
+            f" {serving:.3f} a round; the instrument {mine} over {walked},"
+            f" {instrument:.3f} a round; apart {abs(serving - instrument):.3f};"
+            f" a first round of 1 draft or of every draft:"
+            f" {sum(x[2] for x in taken)} or {sum(x[3] for x in taken)} rounds"
+        )
+    if drafts_log is not None:
+        lines.append(
+            f"drafts log: {len(rounds_logged)} rounds, {astray} held by no request,"
+            f" {sum(not each for each in logs)} requests with none"
+        )
+        for klass, got in agreed.items():
+            if not got.rounds:
+                lines.append(
+                    f"{klass}: no logged round has a row; without a row:"
+                    f" {got.unrecorded}"
+                )
+                continue
+            lines.append(
+                f"{klass}: serving's logged drafts at {got.rounds} rounds with a row:"
+                f" the instrument's first draft at {got.first}"
+                f" ({got.first / got.rounds:.3f}), its every draft at {got.whole},"
+                f" {got.leading / got.rounds:.3f} drafts a round the instrument's from"
+                f" the first on; without a row: {got.unrecorded}"
+            )
+    return lines, sound
 
 
 def _alone(given: list[int]) -> str:

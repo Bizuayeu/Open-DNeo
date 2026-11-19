@@ -1,0 +1,27 @@
+evd1: 320 answered, 0 without rounds
+  agent: 64 replies, 4004 tokens over 1117 rounds, 3.585 a round
+  chat: 64 replies, 15693 tokens over 6540 rounds, 2.400 a round
+  code: 64 replies, 16094 tokens over 3375 rounds, 4.769 a round
+  ja: 64 replies, 15736 tokens over 7548 rounds, 2.085 a round
+  prose: 64 replies, 16109 tokens over 7929 rounds, 2.032 a round
+evd2: 320 answered, 0 without rounds
+  agent: 64 replies, 4004 tokens over 1117 rounds, 3.585 a round
+  chat: 64 replies, 15693 tokens over 6540 rounds, 2.400 a round
+  code: 64 replies, 16094 tokens over 3376 rounds, 4.767 a round
+  ja: 64 replies, 15736 tokens over 7548 rounds, 2.085 a round
+  prose: 64 replies, 16109 tokens over 7929 rounds, 2.032 a round
+  replies the same tokens as evd1's: 320 of 320
+evm1: 320 answered, 0 without rounds
+  agent: 64 replies, 4004 tokens over 944 rounds, 4.242 a round
+  chat: 64 replies, 15693 tokens over 6951 rounds, 2.258 a round
+  code: 64 replies, 16094 tokens over 4420 rounds, 3.641 a round
+  ja: 64 replies, 15736 tokens over 6971 rounds, 2.257 a round
+  prose: 64 replies, 16109 tokens over 7927 rounds, 2.032 a round
+  replies the same tokens as evd1's: 320 of 320
+evm2: 320 answered, 0 without rounds
+  agent: 64 replies, 4004 tokens over 945 rounds, 4.237 a round
+  chat: 64 replies, 15693 tokens over 7039 rounds, 2.229 a round
+  code: 64 replies, 16094 tokens over 4430 rounds, 3.633 a round
+  ja: 64 replies, 15736 tokens over 7007 rounds, 2.246 a round
+  prose: 64 replies, 16109 tokens over 7914 rounds, 2.036 a round
+  replies the same tokens as evd1's: 320 of 320

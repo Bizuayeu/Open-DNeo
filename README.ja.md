@@ -2,7 +2,7 @@
 
 [DNeo](https://arxiv.org/abs/2611.21925) の drafter の重みを、手元の機材で作るための道具と手順です。配信エンジンが記録した行から学習します。論文の著者とは関係のない、独立の非公式プロジェクトです。
 
-**状態（0.2.0、2026-11-19）：計画と下調べと、手元で採点する物差しまでです。重みはまだ無く、この方法がうまくいくことを示す結果もありません。** 物差しは本物の重みの上で動きました。物差しが出す「1 round の token」の数は、配信と比べる門を読むまで公開しません。段が進むごとに、道具と数と、効かなかったことを足していきます。
+**状態（0.3.0、2026-11-20）：計画と下調べと、配信と同じに数える手元の物差しまでです。重みはまだ無く、この方法がうまくいくことを示す結果もありません。** 門 G0 で、物差しの「1 round の token」は、評価の組のうち封をしていない半分の、どの class でも配信の数と 0.013 以内でした（[受領証](receipts/2026-11-20-g0/README.md)、英語）。段が進むごとに、道具と数と、効かなかったことを足していきます。
 
 [English](README.md)
 
@@ -63,7 +63,9 @@ open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # その記録の上
 
 `score` は、返事の行を 1 つずつ anchor にして、配信の時に組まれるのと同じ block を DFlash2 の drafter に通します。文脈は、その stream のそれより前の行です。提案の鎖は TensorFold の GLM の lane と同じ所で切り、返事を 2 通りに歩きます。1 つ目は、どの round も drafter の物として数えます。2 つ目は、1 本だけで書かせた stream の round を、配信が取るとおりに数えます。stream の最後の token が、それより前の 8 token 以上の並びを繰り返している所では、その round は drafter の鎖の代わりに「前にその並びの後へ続いた token」の写し（copy）を検証します。`--served` を付けると、重みを配信の時の既定の形にして採点します。drafter の線形と本体の head は 4 bit、head の点数は bfloat16 です。`--max-tokens` には request の新しい token の上限を渡します。上限で切られた返事の終わり近くの round が、それで決まります。
 
-[計画](docs/plan.md)（英語）の門 G0 が配信と比べるのは、2 つ目の歩みの数です。まだ比べていないので、その門を読むまで、物差しの「1 round の token」の数は公開しません。配信との違いは 2 つ残っています。返事の最初の round が持つ draft の数は、配信では実測の round の時間から決まります。報告は、その round が draft を 1 本だけ持った時と、全部持った時の round の数も出します。また、物差しが歩くのは記録が持つ token で、返事より 1 つ少ないことがあります。
+`--run RUN` は、走りの一覧（run file、`open_dneo.runs`）を読みます。1 行が 1 つの request で、prompt と返事の token id、`max_tokens`、配信の round の数を持ちます。request ごとに、それを記録した stream を探して組み、request の prompt の全部と返事の全部を、その request 自身の上限まで歩きます。server が保存した prompt の頭から再開して stream が prompt の途中から始まっていても、prompt の頭からの copy を見落としません。報告は、配信の「1 round の token」と物差しの数を class ごとに並べます。これに `--drafts-log LOG` を足すと、TensorFold の server が `TF_GLM_DFLASH2_LOG` で書いた DFlash2 の round の行を読み、同じ anchor で最初の draft が物差しと同じ round、頭から同じ draft の数、全部の draft が同じ round を class ごとに数えます。
+
+[計画](docs/plan.md)（英語）の門 G0 が配信と比べるのは、2 つ目の歩みの数です。`--run` を付け、重みを配信の形にして比べると、どの class でも 0.013 以内でした（[receipts/2026-11-20-g0](receipts/2026-11-20-g0/README.md)、英語）。配信との違いは 2 つ残っています。返事の最初の round が持つ draft の数は、配信では実測の round の時間から決まります。報告は、その round が draft を 1 本だけ持った時と、全部持った時の round の数も出します。また、`--run` を付けない時に物差しが歩くのは記録が持つ token で、返事より 1 つ少ないことがあります。
 
 この 2 つの command が要る記録：tap k は「本体の k 層を通ったあとの状態」です。GLM では 4 本の residual stream の平均で、DFlash2 の drafter が読む物と同じです。層の数と同じ番号の tap は、最後の norm のあとの行です。`greedy` はその最後の tap（GLM-5.3-Flash では 45）を読みます。`score` は、drafter の `target_layer_ids` のそれぞれに 1 を足した tap（上の drafter では 6・15・25・34・43）を読みます。TensorFold の `--record` は、GLM の行をまだ出しません。このプロジェクトが使っている GLM 用の recorder も、まだ公開していません。その最初の確かめで分かった事は、[receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md)（英語）にあります。
 

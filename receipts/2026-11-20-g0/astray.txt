@@ -1,0 +1,3 @@
+rounds 26829, held by a request 26509
+left 320, at an again prompt's end with the token it gave: 320
+the left rounds come after every held one in the log: True

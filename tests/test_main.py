@@ -60,12 +60,37 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     asked = ["score", "rec", "--drafter", "dr", "--target", "ck", "--device", "cuda"]
     assert cli.main(asked) == 1
     assert cli.main([*asked[:6], "--served", "--streams", "--max-tokens", "48"]) == 1
+    assert cli.main([*asked[:6], "--served", "--run", "run.jsonl"]) == 1
+    logged = ["--run", "run.jsonl", "--drafts-log", "serve.log"]
+    assert cli.main([*asked[:6], *logged]) == 1
     assert seen == [
         (Path("rec"), Path("ck"), "cpu", True),
-        (Path("rec"), Path("dr"), Path("ck"), "cuda", False, False, None),
-        (Path("rec"), Path("dr"), Path("ck"), "cpu", True, True, 48),
+        (Path("rec"), Path("dr"), Path("ck"), "cuda", False, False, None, None, None),
+        (Path("rec"), Path("dr"), Path("ck"), "cpu", True, True, 48, None, None),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cpu",
+            False,
+            True,
+            None,
+            Path("run.jsonl"),
+            None,
+        ),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cpu",
+            False,
+            False,
+            None,
+            Path("run.jsonl"),
+            Path("serve.log"),
+        ),
     ]
-    assert capfdbinary.readouterr().out == b"g\ns\ns\n"
+    assert capfdbinary.readouterr().out == b"g\ns\ns\ns\ns\n"
 
 
 def test_a_torch_command_says_what_it_needs_where_torch_is_not(monkeypatch):

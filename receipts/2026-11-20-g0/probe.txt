@@ -1,0 +1,14 @@
+code-00: 137 prompt ids; ran 137 on completions (cached 0), 137 on chat (cached 0); replies the same
+agent-00: 2770 prompt ids; ran 2770 on completions (cached 0), 2770 on chat (cached 2048); replies the same
+agent-01: 4232 prompt ids; ran 4232 on completions (cached 0), 4232 on chat (cached 4096); replies the same
+chat-00: 29 prompt ids; ran 29 on completions (cached 0), 29 on chat (cached 0); replies the same
+ja-00: 47 prompt ids; ran 47 on completions (cached 0), 47 on chat (cached 0); replies the same
+prose-00: 221 prompt ids; ran 221 on completions (cached 0), 221 on chat (cached 0); replies the same
+code-00: recorded streams with these prompt rows (first row, ids compared): [(0, 137), (0, 137)]
+agent-00: recorded streams with these prompt rows (first row, ids compared): [(0, 2770), (2048, 722)]
+agent-01: recorded streams with these prompt rows (first row, ids compared): [(0, 4232), (4096, 136)]
+chat-00: recorded streams with these prompt rows (first row, ids compared): [(0, 29), (0, 29)]
+ja-00: recorded streams with these prompt rows (first row, ids compared): [(0, 47), (0, 47)]
+prose-00: recorded streams with these prompt rows (first row, ids compared): [(0, 221), (0, 221)]
+probe: 6 items; prompt counts the same in 6; replies the same in 6 (seen only); recorded: a chat stream compared from row 0
+probe: token ids on /v1/completions run the chat route's prompt

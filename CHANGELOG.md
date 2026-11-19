@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.3.0 (2026-11-20)
+
+Gate G0 passes: the offline instrument counts a DFlash2 drafter's tokens a round within 0.013 of serving's in every
+class of the evaluation set's open half, where the gate allows 0.1. No weights yet, and no result yet on whether
+the approach works.
+
+- `receipts/2026-11-20-g0`: the reading of G0, from four launches of one server on the open half's 320 prompts.
+  The drafts serving logged are the instrument's at the same anchor: the first draft in 99.1 to 99.7% of rounds
+  by class, all seven in 87.9 to 96.9%. A second launch with the drafter differs by one round, in one class. One
+  launch can record rows and serve DFlash2 drafts, and recording changes no reply.
+- `open-dneo score --run RUN` (`open_dneo.runs`): pairs each request of a run file with the stream that recorded it,
+  walks the request's whole prompt and reply to its own limit of new tokens, and sets serving's tokens a round
+  beside the instrument's, class by class.
+- `open-dneo score --run RUN --drafts-log LOG` (`open_dneo.logged`): the drafts a TensorFold server logs with
+  `TF_GLM_DFLASH2_LOG`, beside the instrument's at the same anchors, class by class.
+- `score.lanes` takes a request's prompt and reply, so that copies are looked for in the whole prompt where a
+  stream begins after it, and the reply's last token is walked.
+- `tests/test_lane_core.py` and `tools/oracle`: the walk's rounds are those of TensorFold's lane core, which
+  `tools/oracle` records on 16 cases at TensorFold `e3fb56cb09`.
+- `docs/plan.md`: "How G0 is measured" was made exact after the evaluation set was built and before serving's
+  number was read, and holds G0's result.
+
+Changes to what 0.2.0 said:
+
+- `docs/plan.md` had the prompts go as plain completions. Each is its messages under the chat template, sent as
+  token ids to the completions route where those ids are the ones the chat route runs, which they were on the six
+  prompts checked.
+- The evaluation set has a sealed half that nothing reads before G2, and G2 is read on it.
+- The launch G0 judges is the first counted one with the drafter that serves the whole open half and records its
+  rows, and no launch without rows is judged in its place.
+- The walk over a reply's own tokens, which 0.2.0 listed as not written, is `score --run`. Without `--run` the
+  walk is still over the tokens a recording holds.
+- Whether one launch can record rows and serve DFlash2 drafts was not checked. It can.
+
 ## 0.2.0 (2026-11-19)
 
 The offline instrument, and how gate G0 is measured. No weights, and no result yet on whether the approach works.

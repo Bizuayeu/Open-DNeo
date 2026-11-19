@@ -77,6 +77,17 @@ def parser() -> argparse.ArgumentParser:
         type=int,
         help="the requests' limit of new tokens, where the replies were cut by it",
     )
+    scored.add_argument(
+        "--run",
+        dest="run_file",  # `run` is each command's own function
+        help="a run file: each request paired with its stream, serving's tokens a"
+        " round beside the instrument's, class by class",
+    )
+    scored.add_argument(
+        "--drafts-log",
+        help="with --run, a server's log with its DFlash2 rounds: the drafts serving"
+        " logged beside the instrument's at the same anchors, class by class",
+    )
     for command in (own, scored):
         command.add_argument(
             "folder", help="the --record folder, or any folder of streams"
@@ -100,6 +111,8 @@ def parser() -> argparse.ArgumentParser:
             a.streams,
             a.served,
             a.max_tokens,
+            None if a.run_file is None else Path(a.run_file),
+            None if a.drafts_log is None else Path(a.drafts_log),
         )
     )
     return top

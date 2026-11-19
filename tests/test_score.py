@@ -355,6 +355,57 @@ def test_lanes_ask_for_as_many_drafts_as_the_drafters_block_holds():
     assert [given.offered for given in shallow[:2]] == [1, 9]
 
 
+def test_lanes_look_for_copies_in_the_whole_prompt_they_are_given():
+    prompt, reply = [*range(1, 13), 50], [*range(1, 13), 60, 61]
+    values, _ = drawn(len(prompt) + len(reply) - 4)
+    # a prompt resumed from kept state: the stream's rows begin at row 4
+    held = stream(values, (prompt + reply)[4:], first=4, prompt=len(prompt))
+    found = never(reply)
+
+    def wrong(at):
+        return [-1] * 7, [1.0] * 7
+
+    given = score.lanes(held, found, prompt=prompt)
+    assert given == rounds.served(prompt, reply, wrong)
+    assert score.lanes(held, found) == rounds.served(prompt[4:], reply, wrong)
+    # the reply's first eight tokens repeat the prompt's first: its whole copies on
+    assert given[7] == rounds.Round("copy", 3, 3, 4)
+    assert "copy" not in [r.kind for r in score.lanes(held, found)][:8]
+
+
+def test_lanes_walk_the_replys_last_token_where_it_is_given():
+    prompt, reply = [*range(1, 13), 50], list(range(100, 130))
+    values, _ = drawn(len(prompt) + len(reply) - 1)
+    # a reply that ended of itself: its last token has no row
+    held = stream(values, prompt + reply[:-1], first=0, prompt=len(prompt))
+    found = never(reply[:-1])
+    assert sum(r.tokens for r in score.lanes(held, found)) == len(reply) - 2
+    assert (
+        sum(r.tokens for r in score.lanes(held, found, reply=reply)) == len(reply) - 1
+    )
+
+
+def test_lanes_refuse_a_prompt_or_reply_that_is_not_the_streams():
+    prompt, reply = [*range(1, 13), 50], list(range(100, 110))
+    values, _ = drawn(len(prompt) + len(reply) - 4)
+    held = stream(values, (prompt + reply)[4:], first=4, prompt=len(prompt))
+    found = never(reply)
+    with pytest.raises(
+        ValueError, match="the prompt has 12 tokens, and the stream's 13"
+    ):
+        score.lanes(held, found, prompt=prompt[1:])
+    with pytest.raises(ValueError, match="prompt token 5 is 99, and the stream's is 6"):
+        score.lanes(held, found, prompt=[*prompt[:5], 99, *prompt[6:]])
+    # rows before the stream's are the caller's to know
+    assert score.lanes(held, found, prompt=[0] * 4 + prompt[4:])
+    with pytest.raises(
+        ValueError, match="reply token 2 is 99, and the stream's is 102"
+    ):
+        score.lanes(held, found, reply=[100, 101, 99])
+    with pytest.raises(ValueError, match="12 tokens, and the stream rows for 10"):
+        score.lanes(held, found, reply=[*reply, 110, 111])
+
+
 def test_lanes_give_each_round_its_own_anchors_drafts():
     sure = [[1.0, 1.0]] * 6
     held = found([[11, 12], [12, 0], [13, 14], [0, 0], [15, 0], [0, 0]], sure)
@@ -600,6 +651,202 @@ def test_report_counts_the_rounds_that_are_copies(tmp_path):
     # and it reaches the two counts of another first round
     one, every = (len(score.lanes(held, found, 10, depth)) for depth in (1, 3))
     assert lines[3].endswith(f"of every draft: {one} or {every} rounds")
+
+
+def run_file(path, entries):
+    """A run as the evaluation client writes it: a JSON line a request."""
+    path.write_text("".join(json.dumps(e) + "\n" for e in entries), encoding="utf-8")
+    return path
+
+
+def asked(id_, klass, prompt, reply, rounds, max_tokens=64):
+    return {
+        "id": id_,
+        "class": klass,
+        "max_tokens": max_tokens,
+        "prompt_ids": [int(t) for t in prompt],
+        "reply_ids": [int(t) for t in reply],
+        "completion_tokens": len(reply),
+        "speculative": {"rounds": rounds},
+        "status": 200,
+    }
+
+
+def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
+    tmp_path, monkeypatch
+):
+    drafted, checkpoint_folder, (model, target, reading) = folders(tmp_path)
+    root = tmp_path / "rec"
+    made_streams = []
+    for n, (prompt, replied) in enumerate(((4, 8), (5, 9))):
+        values, tokens = drawn(prompt + replied)  # prompts of 4 and 5: streams apart
+        on_disk(root, values, tokens, first=0, prompt=prompt, n=n)
+        made_streams.append((stream(values, tokens, first=0, prompt=prompt), prompt))
+    # the second stream's request comes first in the run: requests pair by content
+    (first, p0), (second, p1) = made_streams
+    tok0, tok1 = first.tok.astype(int), second.tok.astype(int)
+    run = run_file(
+        tmp_path / "run.jsonl",
+        [
+            asked(
+                "chat-00", "chat", tok1[:p1], [*tok1[p1:], 7], rounds=4, max_tokens=12
+            ),
+            asked(
+                "code-00", "code", tok0[:p0], [*tok0[p0:], 6], rounds=5, max_tokens=9
+            ),
+        ],
+    )
+    limits, walk = [], score.lanes
+    monkeypatch.setattr(
+        score,
+        "lanes",
+        lambda *given, **named: limits.append(given[2]) or walk(*given, **named),
+    )
+    lines, sound = score.report(root, drafted, checkpoint_folder, run=run)
+    monkeypatch.setattr(score, "lanes", walk)
+    assert sound
+    assert set(limits) == {12, 9}  # each request's own limit
+    said = []
+    for klass, held, prompt, last, given, limit in (
+        ("chat", second, p1, 7, 4, 12),
+        ("code", first, p0, 6, 5, 9),
+    ):
+        found = score.proposals(model, target, held, reading)
+        reply = [*held.tok.astype(int)[prompt:], last]
+        lane = score.lanes(
+            held,
+            found,
+            limit,
+            prompt=held.tok.astype(int)[:prompt].tolist(),
+            reply=reply,
+        )
+        tokens = sum(r.tokens for r in lane)
+        assert tokens == len(reply) - 1
+        one, every = (
+            len(
+                score.lanes(
+                    held,
+                    found,
+                    limit,
+                    depth,
+                    prompt=held.tok.astype(int)[:prompt].tolist(),
+                    reply=reply,
+                )
+            )
+            for depth in (1, found.drafts.shape[1])
+        )
+        said.append(
+            f"{klass}: 1 replies; serving {len(reply) - 1} tokens over {given} rounds,"
+            f" {(len(reply) - 1) / given:.3f} a round; the instrument {tokens} over"
+            f" {len(lane)}, {tokens / len(lane):.3f} a round; apart"
+            f" {abs((len(reply) - 1) / given - tokens / len(lane)):.3f};"
+            f" a first round of 1 draft or of every draft: {one} or {every} rounds"
+        )
+    assert lines[1:] == ["run: 2 requests, 2 paired with a stream", *said]
+
+
+def test_report_on_a_run_walks_each_requests_whole_prompt_to_its_limit(tmp_path):
+    drafted, checkpoint_folder, (model, target, reading) = folders(tmp_path)
+    run = list(range(3, 15))  # the reply begins with its prompt's twelve tokens again
+    tokens = run + run[:11]
+    values, _ = drawn(len(tokens))
+    root = tmp_path / "rec"
+    # resumed from kept state: the stream's rows begin at row 4
+    on_disk(root, values[4:], tokens[4:], first=4, prompt=len(run))
+    held = stream(values[4:], tokens[4:], first=4, prompt=len(run))
+    found = score.proposals(model, target, held, reading)
+    whole = score.lanes(held, found, 11, prompt=run, reply=run[:11])
+    # the prompt's head gives a copy, and the limit cuts it from 3 tokens to 2
+    assert whole != score.lanes(held, found, 11, reply=run[:11])
+    assert whole != score.lanes(held, found, None, prompt=run, reply=run[:11])
+    file = run_file(tmp_path / "run.jsonl", [asked("a", "code", run, run[:11], 3, 11)])
+    lines, sound = score.report(root, drafted, checkpoint_folder, run=file)
+    assert sound
+    assert f" the instrument 10 over {len(whole)}, " in lines[2]
+
+
+def test_report_on_a_run_sets_servings_logged_drafts_beside_the_instruments(
+    tmp_path,
+):
+    drafted, checkpoint_folder, (model, target, reading) = folders(tmp_path)
+    values, tokens = drawn(12)
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=4)
+    on_disk(
+        root, values, tokens, first=0, prompt=5, n=1
+    )  # a request the log has none of
+    held = stream(values, tokens, first=0, prompt=4)
+    found = score.proposals(model, target, held, reading)
+    tok, width = tokens.astype(int), found.drafts.shape[1]
+    run = run_file(
+        tmp_path / "run.jsonl",
+        [
+            asked("code-00", "code", tok[:4], [*tok[4:], 7], rounds=3, max_tokens=9),
+            asked("code-01", "code", tok[:5], [*tok[5:], 8], rounds=3, max_tokens=9),
+        ],
+    )
+
+    def logged_line(pos, anchor, drafts):
+        shown = ", ".join(str(int(d)) for d in drafts)
+        return (
+            f"info: dflash2 round 0: slot 0 pos {pos} kept 1 anchor {anchor}"
+            f" drafts {{ {shown} }}"
+        )
+
+    mine = found.drafts.tolist()
+    log = tmp_path / "serve-r0.log"
+    log.write_text(
+        "\n".join(
+            [
+                logged_line(99, 1, [0] * width),  # no request's
+                logged_line(4, tok[4], mine[0]),  # every draft the instrument's
+                logged_line(
+                    6, tok[6], [mine[2][0], mine[2][1] + 1, *mine[2][2:]]
+                ),  # the first
+                logged_line(12, 7, [0] * width),  # the reply's last token: no row
+            ]
+        ),
+        encoding="utf-8",
+    )
+    lines, sound = score.report(
+        root, drafted, checkpoint_folder, run=run, drafts_log=log
+    )
+    assert sound
+    assert lines[-2:] == [
+        "drafts log: 4 rounds, 1 held by no request, 1 requests with none",
+        f"code: serving's logged drafts at 2 rounds with a row: the instrument's first"
+        f" draft at 2 (1.000), its every draft at 1, {(width + 1) / 2:.3f} drafts a"
+        f" round the instrument's from the first on; without a row: 1",
+    ]
+    lines, sound = score.report(root, drafted, checkpoint_folder, drafts_log=log)
+    assert (lines[1:], sound) == (["a drafts log is read beside a run file"], False)
+
+
+def test_report_on_a_run_names_a_request_without_its_stream(tmp_path):
+    drafted, checkpoint_folder, _ = folders(tmp_path)
+    values, tokens = drawn(10)
+    on_disk(tmp_path / "rec", values, tokens, first=0, prompt=4)
+    tok = tokens.astype(int)
+    run = run_file(
+        tmp_path / "run.jsonl",
+        [
+            asked("code-00", "code", tok[:4], tok[4:], rounds=2),
+            asked("code-01", "code", [9, 9, 9, 9], [1, 2], rounds=1),
+        ],
+    )
+    lines, sound = score.report(tmp_path / "rec", drafted, checkpoint_folder, run=run)
+    assert not sound
+    assert lines[1:3] == [
+        "run: 2 requests, 1 paired with a stream",
+        "code-01: no stream holds its prompt and reply",
+    ]
+    lines, sound = score.report(
+        tmp_path / "rec", drafted, checkpoint_folder, max_new=9, run=run
+    )
+    assert (lines[1:], sound) == (
+        ["a run gives each request's own limit of new tokens: not --max-tokens"],
+        False,
+    )
 
 
 def test_a_reply_of_one_token_is_listed_without_rounds(tmp_path):

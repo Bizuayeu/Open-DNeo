@@ -1,0 +1,7 @@
+weights as stored
+run: 320 requests, 320 paired with a stream
+code: 64 replies; serving 16094 tokens over 3375 rounds, 4.769 a round; the instrument 16094 over 3361, 4.788 a round; apart 0.020; a first round of 1 draft or of every draft: 3389 or 3355 rounds
+agent: 64 replies; serving 4004 tokens over 1117 rounds, 3.585 a round; the instrument 4004 over 1090, 3.673 a round; apart 0.089; a first round of 1 draft or of every draft: 1110 or 1085 rounds
+chat: 64 replies; serving 15693 tokens over 6540 rounds, 2.400 a round; the instrument 15693 over 6498, 2.415 a round; apart 0.016; a first round of 1 draft or of every draft: 6520 or 6492 rounds
+ja: 64 replies; serving 15736 tokens over 7548 rounds, 2.085 a round; the instrument 15736 over 7488, 2.101 a round; apart 0.017; a first round of 1 draft or of every draft: 7495 or 7482 rounds
+prose: 64 replies; serving 16109 tokens over 7929 rounds, 2.032 a round; the instrument 16109 over 7898, 2.040 a round; apart 0.008; a first round of 1 draft or of every draft: 7902 or 7898 rounds
