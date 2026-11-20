@@ -57,6 +57,7 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     monkeypatch.setattr(greedy, "report", lambda *a: seen.append(a) or (["g"], True))
     monkeypatch.setattr(score, "report", lambda *a: seen.append(a) or (["s"], False))
     assert cli.main(["greedy", "rec", "--target", "ck", "--streams"]) == 0
+    assert cli.main(["greedy", "rec", "--target", "ck", "--save", "nx"]) == 0
     asked = ["score", "rec", "--drafter", "dr", "--target", "ck", "--device", "cuda"]
     assert cli.main(asked) == 1
     assert cli.main([*asked[:6], "--served", "--streams", "--max-tokens", "48"]) == 1
@@ -64,7 +65,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     logged = ["--run", "run.jsonl", "--drafts-log", "serve.log"]
     assert cli.main([*asked[:6], *logged]) == 1
     assert seen == [
-        (Path("rec"), Path("ck"), "cpu", True),
+        (Path("rec"), Path("ck"), "cpu", True, None),
+        (Path("rec"), Path("ck"), "cpu", False, Path("nx")),
         (Path("rec"), Path("dr"), Path("ck"), "cuda", False, False, None, None, None),
         (Path("rec"), Path("dr"), Path("ck"), "cpu", True, True, 48, None, None),
         (
@@ -90,7 +92,7 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             Path("serve.log"),
         ),
     ]
-    assert capfdbinary.readouterr().out == b"g\ns\ns\ns\ns\n"
+    assert capfdbinary.readouterr().out == b"g\ng\ns\ns\ns\ns\n"
 
 
 def test_a_torch_command_says_what_it_needs_where_torch_is_not(monkeypatch):
@@ -124,3 +126,43 @@ def test_rows_passes_its_folders_run_and_weights(monkeypatch, capfdbinary):
         (Path("rec"), Path("dr"), Path("ck"), Path("run.jsonl"), "cuda", False),
     ]
     assert capfdbinary.readouterr().out == b"r\nr\n"
+
+
+def test_probe_passes_its_folders_and_choices(monkeypatch, capfdbinary):
+    from open_dneo import probe
+
+    seen = []
+    monkeypatch.setattr(probe, "report", lambda *a: seen.append(a) or (["p"], True))
+    asked = ["probe", "rec", "--target", "ck", "--next", "nx"]
+    assert cli.main(asked) == 0
+    more = ["--k", "1", "--set", "6,15", "--parts", "p.tsv", "--ridge", "0.1"]
+    assert cli.main([*asked, *more, "--held-every", "5"]) == 0
+    assert seen == [
+        (
+            Path("rec"),
+            Path("ck"),
+            Path("nx"),
+            (1, 2, 3),
+            (),
+            None,
+            1e-3,
+            10,
+            4,
+            8,
+            "cpu",
+        ),
+        (
+            Path("rec"),
+            Path("ck"),
+            Path("nx"),
+            (1,),
+            ((6, 15),),
+            Path("p.tsv"),
+            0.1,
+            5,
+            4,
+            8,
+            "cpu",
+        ),
+    ]
+    assert capfdbinary.readouterr().out == b"p\np\n"

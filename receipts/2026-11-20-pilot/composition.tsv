@@ -1,0 +1,11 @@
+part	written by	dataset	revision	subset	licence	items listed	streams recorded	rows recorded
+ja-book	people (Aozora Bunko)	globis-university/aozorabunko-clean	42a9c9c0f1d6	-	CC-BY-4.0 (the books are in the public domain)	198	41	60636
+ja-web	people (the web)	HuggingFaceFW/fineweb-2	af9c13333eb9	jpn_Jpan/test	ODC-By 1.0; CommonCrawl Terms of Use	991	92	60172
+prose	people (the web)	HuggingFaceFW/fineweb	9bb295ddab0e	sample-10BT	ODC-By 1.0; CommonCrawl Terms of Use	999	108	60053
+ja-magpie	Qwen2.5-32B-Instruct	llm-jp/magpie-sft-v1.0	4f949e18cfa0	-	Apache-2.0	300	143	60009
+ja-rewrite	Qwen3-14B (rewrites of fineweb-2)	llm-jp/scaling-data-constrained-llms	ea7f7e0eb67e	ja_instruct_63b (180), ja_paraphrase_63b (171)	CC-BY-4.0	351	112	60918
+code-oci	Qwen2.5-Coder-32B-Instruct	nvidia/OpenCodeInstruct	8f3ba5bafe4d	-	CC-BY-4.0	299	138	60453
+code-r1	DeepSeek-R1 (the answers after its reasoning)	nvidia/Nemotron-Post-Training-Dataset-v1	74e23eb6f830	code	CC BY 4.0	300	64	61000
+chat-human	people (oasst2)	OpenAssistant/oasst2	179dd21fc551	train	Apache-2.0	600	225	60192
+chat-glm	the target (greedy, thinking off), to oasst2's prompts	OpenAssistant/oasst2	179dd21fc551	train	Apache-2.0 (prompt); the reply is the target's output	600	140	60340
+agent-swe	Qwen3-Coder-480B-A35B-Instruct	nvidia/Nemotron-SWE-v1	0fe17a965b29	r2e_gym	CC-BY-4.0; repository code BSD-3-Clause (30); CC-BY-4.0; repository code HPND (the PIL licence) (15); CC-BY-4.0; repository code Apache-2.0 (10); CC-BY-4.0; repository code BSD-style (Repoze) (6); CC-BY-4.0; repository code MIT (5)	66	8	65536

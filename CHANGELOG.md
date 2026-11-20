@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.0 (2026-11-20)
+
+Stage 1's pilot recording and layer probe: 609,309 prompt-pass rows of ten parts of public text, chosen by one rule
+for who wrote the replies. The target's own greedy choice is the text's next token at 0.973 of the positions of its
+own replies, at 0.84 to 0.88 of open models' code and agent replies, and at 0.52 to 0.60 of people's text and of
+open models' Japanese. A linear probe finds that the deeper a tap, the more of the target's next tokens it holds:
+the five taps 40 to 44 hold more than the five DFlash2 reads, at every k overall. No weights yet, and no result yet
+on whether the approach works.
+
+- `receipts/2026-11-20-pilot`: the composition (each part's writer, dataset, revision, licence, streams and rows,
+  without the text), the target's agreement with the text by part and by role, and the probe's scores for 18 taps
+  and three sets of taps from k 0 to 3. On the agent part the probe does not rank the taps: its eight prompts share
+  a system prompt and tool list that the fit saw.
+- `open-dneo greedy --save NEXT`: keeps the target's choice at every row of each stream counted, a little-endian
+  int32 a row in `NEXT/<stream>.next`.
+- `open-dneo probe FOLDER --target T --next NEXT` (`open_dneo.probe`): for each tap, and for sets of taps side by
+  side, a linear map with an intercept fitted by ridge least squares from the rows at a position to the target's
+  final row k positions on; on the streams held out, how often the head's best token on the mapped row is the
+  target's own choice there, beside the floor, and by part with `--parts`. A configuration's sums are kept only
+  while it is fitted, since a set's Gram can be gigabytes.
+- `docs/plan.md`: who may write the training text's replies, among the decisions so far, and where Stage 1 stands.
+- `NOTICE`: the datasets the receipt names.
+
 ## 0.4.0 (2026-11-20)
 
 Stage 1's comparison of prompt rows with reply rows: from the rows a prompt pass computed, the published DFlash2

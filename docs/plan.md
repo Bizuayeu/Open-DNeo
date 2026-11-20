@@ -81,6 +81,10 @@ Stage 0's two exit conditions were met on 2026-11-19. The recorder's check is in
 hold the instrument's forwards to the outputs of the public definitions (`tests/test_drafter.py`). The stage is not
 finished: its training script is still to be written.
 
+Stage 1 so far, on 2026-11-20: G0 passed, prompt rows were compared with reply rows, and a pilot of 609,309
+prompt-pass rows was recorded and probed ([receipts](../receipts/2026-11-20-pilot/README.md)). The bridge's step-0
+score, the disk and the training speed are still to be reported.
+
 ## Gates
 
 Written before any number is seen. The evaluation prompts train nothing and are split from training by task. Every
@@ -180,13 +184,16 @@ same.
 Checked on 2026-11-20: one launch records rows and serves DFlash2 drafts together, and its replies are the same
 tokens as those of launches that record nothing, so the rows G0 read came from the judged launch itself.
 
-## Decisions so far (2026-11-19)
+## Decisions so far (2026-11-20)
 
 - Rows are recorded from `Bizuayeu/GLM-5.3-Flash-Jammed-XSFP4`, the checkpoint served at TP=2. Other GLM-family
   checkpoints are scored on the evaluation set only.
 - The engine's DNeo path (Stage 3) waits for G2.
 - Training text is public datasets whose licences have been checked. Private logs never train a published
   checkpoint.
+- A reply in the training text is written by people under a permissive licence, by an open-weight model published
+  under MIT or Apache-2.0, or by the target itself. Each item keeps its dataset, revision, row and licence (fixed on
+  2026-11-20, before the pilot recording).
 - Every push to this repository is a release with a version. Documents are in English, with the README also in
   Japanese.
 

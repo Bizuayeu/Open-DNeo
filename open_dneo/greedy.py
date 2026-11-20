@@ -91,12 +91,18 @@ def own(stream: recording.Stream, written: np.ndarray) -> Own:
 
 
 def report(
-    root: Path, checkpoint: Path, device: str = "cpu", each: bool = False
+    root: Path,
+    checkpoint: Path,
+    device: str = "cpu",
+    each: bool = False,
+    save: Path | None = None,
 ) -> tuple[list[str], bool]:
     """How much of the recordings under `root` is the checkpoint's own writing.
 
-    `each` also lists every stream. Not sound if no finished stream could be
-    counted, or one could not be read.
+    `each` also lists every stream. `save` keeps each counted stream's `nexts`
+    as little-endian int32 in `save/<stream>.next`, a token a row, for counts by
+    part of a stream and for probes that need the target's choice at a row. Not
+    sound if no finished stream could be counted, or one could not be read.
     """
     tap = final_tap(checkpoint)
     head = weights.head(checkpoint).to(device)
@@ -107,12 +113,17 @@ def report(
             continue  # a stream that has not closed
         try:
             stream = recording.open_stream(base)
-            counts = own(stream, nexts(stream, head, tap))
+            written = nexts(stream, head, tap)
+            counts = own(stream, written)
         except ValueError as error:
             lines.append(f"{name}: {error}")
             sound = False
             continue
         counted.append(counts)
+        if save is not None:
+            target = save / f"{name}.next"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            written.astype("<i4").tofile(target)
         lines += [f"{name}: {counts.line()}"] if each else []
     total = Own(*np.sum(counted, axis=0).tolist()) if counted else Own(0, 0, 0, 0)
     lines.append(f"streams {len(counted)}, tap {tap}: {total.line()}")

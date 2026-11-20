@@ -3,12 +3,14 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.4.0, 2026-11-20): a plan, a survey and an offline instrument that counts as serving does. There are no
-weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
+**Status (0.5.0, 2026-11-20): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
+pilot recording and layer probe. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
 published DFlash2 drafter proposes nearly what it proposes from reply rows of the same tokens
-([receipts](receipts/2026-11-20-rows/README.md)). Each stage will add its tools, its numbers and what did not pay.
+([receipts](receipts/2026-11-20-rows/README.md)). On a pilot of 609,309 such rows, the five taps before the final
+row hold more of the target's next tokens than the five DFlash2 reads
+([receipts](receipts/2026-11-20-pilot/README.md)). Each stage will add its tools, its numbers and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -73,8 +75,10 @@ open-dneo shapes incoai/GLM-5.3-Flash-DFlash2     # files, config and every tens
 open-dneo entrance incoai/GLM-5.3-Flash-DFlash2   # the diagonal share of its dense entrance
 open-dneo recording DIR                           # check what a server recorded with --record DIR
 open-dneo greedy DIR --target CHECKPOINT          # how much of a recording its target would have written
+open-dneo greedy DIR --target CHECKPOINT --save NEXT   # and its choice at every row, kept
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # a DFlash2 drafter's tokens a round on it
 open-dneo rows DIR --drafter DRAFTER --target CHECKPOINT --run RUN   # its drafts from prompt rows and reply rows
+open-dneo probe DIR --target CHECKPOINT --next NEXT   # which taps hold the target's next tokens
 ```
 
 `shapes` and `entrance` read a public Hugging Face repository by HTTP range requests, without credentials. `shapes`
@@ -93,6 +97,8 @@ needs its `config.json`, its index and the files that hold the embedding and the
 `greedy` multiplies the rows after the final norm by the target's head and counts, for a recording's reply tokens
 and its prompt tokens, how many are the token the target would write next. A reply decoded without sampling should
 be that all the way, which checks the head, its orientation and the tap before a drafter is scored against them.
+`--save NEXT` keeps the target's choice at every row of each stream counted, a little-endian int32 a row in
+`NEXT/<stream>.next`, for counts by part or role and for `probe`.
 
 `score` takes every reply row as an anchor and runs the DFlash2 drafter on the block serving would build there, with
 the stream's earlier rows as its context. It cuts each chain of drafts where TensorFold's GLM lanes cut it and walks
@@ -123,9 +129,17 @@ and has the drafter propose at the reply's positions from each kind of row. Per 
 walk over each kind and how often the two agree on the first draft and on every draft. With the weights as served,
 the walks differed by 0.004 to 0.029 tokens a round ([receipts/2026-11-20-rows](receipts/2026-11-20-rows/README.md)).
 
+`probe` asks which taps of a recording hold what the target writes next. For each tap, and for sets of taps side
+by side (`--set 6,15,25,34,43`), it fits a linear map with an intercept by ridge least squares, from the rows at a
+position p to the target's final row at p + k (`--k`, by default 1, 2 and 3), on most of the streams. On the
+streams held out, one in `--held-every` by name, it sends the mapped row through the target's head and counts how
+often the best token is the target's own choice at p + k, as `greedy --save` kept it. It also gives the floor,
+how often the commonest choice is right, and with `--parts` (a stream's name and its part a line) the scores by
+part. The final tap at k 0 maps a row to itself and scores 1, which checks that the choices sit beside their rows.
+
 The recording these commands need: tap k is the target's state after k layers, for GLM the mean of its four
 residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the
-final norm. `greedy` reads that last tap, 45 for GLM-5.3-Flash. `score` and `rows` read the tap one above each of
+final norm. `greedy` and `probe` read that last tap, 45 for GLM-5.3-Flash. `score` and `rows` read the tap one above each of
 the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above. TensorFold's `--record` gives no rows for
 GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in
 [receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md).

@@ -122,3 +122,18 @@ def test_report_names_a_stream_it_cannot_count(tmp_path):
     assert lines == [
         "streams 0, tap 9: reply 0 of 0 tokens the target's own, prompt 0 of 0"
     ]
+
+
+def test_report_saves_each_streams_choices_where_asked(tmp_path):
+    root = tmp_path / "rec"
+    recorded(root / "7-0", 0)
+    recorded(root / "7-0", 1, taps=(2,))  # not counted: nothing saved
+    save = tmp_path / "next"
+    lines, _ = greedy.report(root, checkpoint(tmp_path / "ck"), save=save)
+    assert lines[-1].startswith("streams 1, tap 9")
+    saved = np.fromfile(save / "7-0" / "0.next", dtype="<i4")
+    assert saved.tolist() == [1, 2, 4, 1, 3]
+    assert sorted(p.relative_to(save).as_posix() for p in save.rglob("*")) == [
+        "7-0",
+        "7-0/0.next",
+    ]

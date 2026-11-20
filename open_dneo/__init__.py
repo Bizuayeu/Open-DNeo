@@ -1,3 +1,3 @@
 """Tools for making DNeo drafter weights from rows a serving engine records."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

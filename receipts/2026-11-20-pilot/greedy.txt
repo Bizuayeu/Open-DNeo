@@ -1,0 +1,17 @@
+== pr1
+streams paired 1063, unpaired 0
+chat-glm: 0.909 of 60200 positions; assistant 0.973 (54607), system 0.000 (840), template 0.088 (922), user 0.395 (3831)
+chat-human: 0.508 of 59967 positions; assistant 0.551 (50741), system 0.000 (1350), template 0.000 (1350), user 0.390 (6526)
+code-oci: 0.735 of 60315 positions; assistant 0.875 (29943), system 0.000 (828), template 0.000 (828), user 0.632 (28716)
+code-r1: 0.836 of 60936 positions; text 0.836 (60936)
+ja-book: 0.519 of 60595 positions; text 0.519 (60595)
+ja-magpie: 0.546 of 59866 positions; assistant 0.568 (50911), system 0.000 (858), template 0.000 (858), user 0.518 (7239)
+ja-rewrite: 0.597 of 60806 positions; text 0.597 (60806)
+ja-web: 0.561 of 60080 positions; text 0.561 (60080)
+prose: 0.543 of 59945 positions; text 0.543 (59945)
+chat-human over the 140 prompts both hold, assistant positions: 0.543 (32221)
+chat-glm over the 140 prompts both hold, assistant positions: 0.973 (54607)
+== pa1
+streams paired 8, unpaired 0
+agent-swe: 0.386 of 65528 positions; assistant 0.836 (4997), observation 0.195 (18959), system 0.415 (30936), template 0.630 (708), user 0.414 (9928)
+agent-swe assistant positions an item: [470, 635, 474, 740, 653, 539, 610, 876] (of 8 items)

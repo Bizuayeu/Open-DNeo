@@ -1,4 +1,4 @@
-"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows."""
+"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows, probe."""
 
 from __future__ import annotations
 
@@ -97,9 +97,16 @@ def parser() -> argparse.ArgumentParser:
         )
         command.add_argument("--device", default="cpu", help="where torch computes")
         command.add_argument("--streams", action="store_true", help="list every stream")
+    own.add_argument(
+        "--save", help="a folder to keep each stream's choices in, <stream>.next"
+    )
     own.set_defaults(
         run=lambda a: _with_torch("greedy").report(
-            Path(a.folder), Path(a.target), a.device, a.streams
+            Path(a.folder),
+            Path(a.target),
+            a.device,
+            a.streams,
+            Path(a.save) if a.save else None,
         )
     )
     scored.set_defaults(
@@ -150,6 +157,47 @@ def parser() -> argparse.ArgumentParser:
             Path(a.run_file),
             a.device,
             a.served,
+        )
+    )
+
+    probed = commands.add_parser(
+        "probe", help="where a recording's layers hold the target's next tokens"
+    )
+    probed.add_argument("folder", help="the --record folder, its streams' taps alike")
+    probed.add_argument(
+        "--target", required=True, help="the target checkpoint's folder"
+    )
+    probed.add_argument(
+        "--next", required=True, help="greedy --save's folder: each stream's choices"
+    )
+    probed.add_argument("--parts", help="a file of lines: stream name, a tab, its part")
+    probed.add_argument(
+        "--k", type=int, action="append", help="positions ahead (default 1, 2 and 3)"
+    )
+    probed.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        help="taps fitted side by side, comma-separated, e.g. 6,15,25,34,43",
+    )
+    probed.add_argument("--ridge", type=float, default=1e-3)
+    probed.add_argument("--held-every", type=int, default=10)
+    probed.add_argument("--train-every", type=int, default=4)
+    probed.add_argument("--eval-every", type=int, default=8)
+    probed.add_argument("--device", default="cpu", help="where torch computes")
+    probed.set_defaults(
+        run=lambda a: _with_torch("probe").report(
+            Path(a.folder),
+            Path(a.target),
+            Path(a.next),
+            tuple(a.k or (1, 2, 3)),
+            tuple(tuple(int(t) for t in s.split(",")) for s in a.set),
+            Path(a.parts) if a.parts else None,
+            a.ridge,
+            a.held_every,
+            a.train_every,
+            a.eval_every,
+            a.device,
         )
     )
     return top
