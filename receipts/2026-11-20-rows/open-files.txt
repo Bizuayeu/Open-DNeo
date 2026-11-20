@@ -1,0 +1,13 @@
+open-dneo rows on the recording of G0's judged launch (640 streams), each run under a soft limit of 1,024 open files
+(ulimit -S -n 1024) inside a control group of 32 GiB without swap, on an aarch64 machine's CPU.
+
+This release's code, one minute after the start:
+  ls /proc/PID/fd | wc -l                  645
+  ls -l /proc/PID/fd | grep -c '\.st$'     640   (the tapped rows' maps, one a stream)
+  grep 'open files' /proc/PID/limits       Max open files 1024 (soft)
+  rows: rc 0 after 6,633 s, at most 32.9 GiB resident, the mapped rows' pages included (time -v); rows.txt is the report
+
+The same command with the reading of a recording as released in 0.3.0 (open_dneo/recording.py the same file):
+  rows: rc 1 after 7 s, no report
+  OSError: [Errno 24] Too many open files
+  (raised in recording._view, numpy.memmap, while the streams were opened)

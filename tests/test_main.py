@@ -109,3 +109,18 @@ def test_another_missing_module_is_not_blamed_on_torch(monkeypatch):
     monkeypatch.setattr(cli.importlib, "import_module", absent)
     with pytest.raises(ModuleNotFoundError, match="other"):
         cli.main(["score", "rec", "--drafter", "dr", "--target", "ck"])
+
+
+def test_rows_passes_its_folders_run_and_weights(monkeypatch, capfdbinary):
+    from open_dneo import rows
+
+    seen = []
+    monkeypatch.setattr(rows, "report", lambda *a: seen.append(a) or (["r"], True))
+    asked = ["rows", "rec", "--drafter", "dr", "--target", "ck", "--run", "run.jsonl"]
+    assert cli.main([*asked, "--served"]) == 0
+    assert cli.main([*asked, "--device", "cuda"]) == 0
+    assert seen == [
+        (Path("rec"), Path("dr"), Path("ck"), Path("run.jsonl"), "cpu", True),
+        (Path("rec"), Path("dr"), Path("ck"), Path("run.jsonl"), "cuda", False),
+    ]
+    assert capfdbinary.readouterr().out == b"r\nr\n"

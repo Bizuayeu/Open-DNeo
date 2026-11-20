@@ -43,7 +43,11 @@ passes computed over the cache. In the recorder's check the same positions compu
 at the four deeper taps, and the target's head picked the same tokens from both
 ([receipts](../receipts/2026-11-19-recorder-check/README.md)). TensorFold's recipe reports about 1 to 5% on other
 targets and trains on both kinds of row. Stage 1 measures what the gap does to a drafter's proposals, before the
-pilot recording.
+pilot recording. Measured on 2026-11-20 with the published DFlash2 drafter, on the evaluation set's open half: from
+prompt rows it walks 0.004 to 0.029 fewer tokens a round than from reply rows of the same tokens, by class, and its
+first draft is the same at 95.7 to 99.2% of positions ([receipts](../receipts/2026-11-20-rows/README.md)). That
+drafter was trained on its publisher's data, not on prompt rows, and the numbers come from one launch with the
+weights as serving holds them.
 
 ## Not doing
 

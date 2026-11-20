@@ -113,6 +113,16 @@ def test_a_stream_is_read_row_by_row(tmp_path):
     assert tapped.tolist() == [[[1.0, -2.0], [0.5, 2.0]]] * 2
 
 
+def test_a_stream_keeps_one_file_open_for_its_rows_alone(tmp_path):
+    # a run opens hundreds of streams at once: tokens, positions and kinds are
+    # read whole, and only the tapped rows stay mapped (one file a stream)
+    stream = recording.open_stream(three_rows(tmp_path / "7-0"))
+    assert not any(
+        isinstance(a, np.memmap) for a in (stream.tok, stream.pos, stream.kind)
+    )
+    assert isinstance(stream.st, np.memmap)
+
+
 def test_rows_are_in_order_when_each_is_one_position_past_the_last(tmp_path):
     assert recording.open_stream(three_rows(tmp_path / "a")).in_order()
     skipped = three_rows(tmp_path / "b", pos=struct.pack("<3I", 2, 4, 5))

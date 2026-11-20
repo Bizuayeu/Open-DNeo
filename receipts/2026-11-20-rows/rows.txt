@@ -1,0 +1,7 @@
+weights as served: the drafter's linears and the head at 4 bits, the head's scores in bfloat16
+run: 320 requests, 320 with their reply's stream, 320 with a prompt's stream of the same tokens
+code: 64 replies, 16107 anchors with both rows, 0 without; the drafter alone over reply rows 16094 tokens in 3207 rounds, 5.018 a round; over prompt rows 16094 in 3214, 5.007 a round; the first draft the same at 15984 anchors (0.992), every draft at 14241
+agent: 64 replies, 4010 anchors with both rows, 0 without; the drafter alone over reply rows 4004 tokens in 1167 rounds, 3.431 a round; over prompt rows 4004 in 1177, 3.402 a round; the first draft the same at 3937 anchors (0.982), every draft at 3182
+chat: 64 replies, 15715 anchors with both rows, 0 without; the drafter alone over reply rows 15693 tokens in 6532 rounds, 2.402 a round; over prompt rows 15693 in 6543, 2.398 a round; the first draft the same at 15210 anchors (0.968), every draft at 10267
+ja: 64 replies, 15755 anchors with both rows, 0 without; the drafter alone over reply rows 15736 tokens in 7531 rounds, 2.089 a round; over prompt rows 15736 in 7545, 2.086 a round; the first draft the same at 15090 anchors (0.958), every draft at 8895
+prose: 64 replies, 16123 anchors with both rows, 0 without; the drafter alone over reply rows 16109 tokens in 7919 rounds, 2.034 a round; over prompt rows 16109 in 7956, 2.025 a round; the first draft the same at 15433 anchors (0.957), every draft at 9611

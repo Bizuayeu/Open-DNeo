@@ -1,4 +1,4 @@
-"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score."""
+"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows."""
 
 from __future__ import annotations
 
@@ -113,6 +113,43 @@ def parser() -> argparse.ArgumentParser:
             a.max_tokens,
             None if a.run_file is None else Path(a.run_file),
             None if a.drafts_log is None else Path(a.drafts_log),
+        )
+    )
+    paired = commands.add_parser(
+        "rows",
+        help="a DFlash2 drafter's proposals from reply rows against prompt rows of the"
+        " same tokens",
+    )
+    paired.add_argument("folder", help="the --record folder with both kinds of stream")
+    paired.add_argument(
+        "--drafter",
+        required=True,
+        help="the drafter's folder: config.json and model.safetensors",
+    )
+    paired.add_argument(
+        "--target", required=True, help="the target checkpoint's folder"
+    )
+    paired.add_argument(
+        "--run",
+        dest="run_file",
+        required=True,
+        help="the run file of the replies, each sent again as a prompt",
+    )
+    paired.add_argument(
+        "--served",
+        action="store_true",
+        help="the drafter's linears and the head at 4 bits and the head's scores in"
+        " bfloat16, as serving holds them",
+    )
+    paired.add_argument("--device", default="cpu", help="where torch computes")
+    paired.set_defaults(
+        run=lambda a: _with_torch("rows").report(
+            Path(a.folder),
+            Path(a.drafter),
+            Path(a.target),
+            Path(a.run_file),
+            a.device,
+            a.served,
         )
     )
     return top

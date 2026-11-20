@@ -1,0 +1,6 @@
+class replies positions reply_rows prompt_rows apart first_same all_same
+code 64 16107 5.018 5.007 0.011 99.2% 88.4%
+agent 64 4010 3.431 3.402 0.029 98.2% 79.4%
+chat 64 15715 2.402 2.398 0.004 96.8% 65.3%
+ja 64 15755 2.089 2.086 0.004 95.8% 56.5%
+prose 64 16123 2.034 2.025 0.009 95.7% 59.6%

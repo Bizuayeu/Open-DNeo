@@ -119,13 +119,19 @@ def proposals(
     *,
     at_once: int = AT_ONCE,
     temperature: float = 1.0,
+    anchors: np.ndarray | None = None,
+    context_from: int | None = None,
 ) -> Proposals:
     """The drafts and chances at every reply row of `stream`.
 
     `at_once` anchors go through the model in one pass; the result does not
-    depend on it. ValueError if the stream is not what `reading` and the model
-    take: a tap it does not hold, rows of another width, or rows that are not at
-    consecutive positions (`recording.check` finds those).
+    depend on it. `anchors` takes the rows at those positions as the anchors in
+    place of the reply rows, of any kind: a prompt's rows of the same tokens.
+    `context_from` leaves out the rows before that position, so that two streams
+    are read from the same row. ValueError if the stream is not what `reading` and
+    the model take: a tap it does not hold, rows of another width, rows that are
+    not at consecutive positions (`recording.check` finds those), or an anchor the
+    stream has no row for.
     """
     summary, shape = stream.summary, model.shape
     if at_once < 1:
@@ -150,6 +156,15 @@ def proposals(
             f"the stream's rows are not at consecutive positions from {first}"
         )
     replies = np.flatnonzero(np.asarray(stream.kind) == 1)
+    if anchors is not None:
+        wanted = np.asarray(anchors, np.int64)
+        outside = wanted[(wanted < first) | (wanted >= first + len(pos))]
+        if len(outside):
+            raise ValueError(f"no row at positions {outside.tolist()}")
+        replies = wanted - first
+    origin = first  # the stream's first row: where row 0 of its files lies
+    if context_from is not None:
+        first = max(first, context_from)
     positions, tokens = pos[replies], np.asarray(stream.tok, np.int64)[replies]
     like = model.norm.weight
     drafts = [np.empty((0, shape.block - 1), np.int64)]
@@ -161,22 +176,22 @@ def proposals(
         low, high = first, int(at[-1])
         if reading.window is not None:
             low = max(low, int(at[0]) - reading.window + 1)
-        rows = stream.tapped(low - first, high - first)[:, columns]
+        rows = stream.tapped(low - origin, high - origin)[:, columns]
         features = torch.from_numpy(rows).to(like.device, like.dtype)[None]
         context_positions = torch.arange(low, high, device=like.device)[None]
-        anchors = torch.from_numpy(at).to(like.device)[None]
+        anchored = torch.from_numpy(at).to(like.device)[None]
         block = np.full((len(at), shape.block), reading.mask_token, np.int64)
         block[:, 0] = tokens[start : start + at_once]
         ids = torch.from_numpy(block).to(like.device)
         mask = drafter.visible(
-            anchors,
+            anchored,
             context_positions,
             shape.block,
             whole_block=reading.whole_block,
             window=reading.window,
         )
         hidden = model(
-            target.embed[ids][None], features, anchors, context_positions, mask
+            target.embed[ids][None], features, anchored, context_positions, mask
         )
         # laid out anew: a head's own matrix is folded into one product only on
         # rows that lie in order (`Target.scores`)
@@ -309,21 +324,9 @@ def report(
     sets the drafts serving logged beside the instrument's at the same anchors, by
     class. Not sound if a logged anchor is not its stream's token.
     """
-    config = json.loads((drafter_folder / "config.json").read_text(encoding="utf-8"))
-    model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
-    unread = drafter.load(model, weights.read(drafter_folder / weights.WHOLE))
-    read = Target.read(checkpoint)
-    target = Target(read.embed.to(device), read.head.to(device))
-    lines = ["weights as stored"]
-    if as_served:
-        served.as_served(model)
-        target = Target(target.embed, served.four_bits(target.head), bf16_scores=True)
-        lines = [
-            "weights as served: the drafter's linears and the head at 4 bits,"
-            " the head's scores in bfloat16"
-        ]
-    model, reading = model.to(device), Reading.dflash2(config)
-    lines += [f"the drafter's {name} is not read" for name in unread]
+    model, target, reading, lines, unread = loaded(
+        drafter_folder, checkpoint, device, as_served
+    )
     if drafts_log is not None and run is None:
         return lines + ["a drafts log is read beside a run file"], False
     if run is not None:
@@ -373,6 +376,32 @@ def report(
             " it are missed"
         )
     return lines, sound and walked > 0
+
+
+def loaded(
+    drafter_folder: Path, checkpoint: Path, device: str, as_served: bool
+) -> tuple[drafter.Drafter, Target, Reading, list[str], list[str]]:
+    """The drafter, the target and their reading, a report's first lines, and the
+    names of the drafter's tensors that are not read.
+
+    With `as_served` the drafter's linears and the head are rounded to 4 bits and
+    the head's scores to bfloat16, as serving holds them by default.
+    """
+    config = json.loads((drafter_folder / "config.json").read_text(encoding="utf-8"))
+    model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
+    unread = drafter.load(model, weights.read(drafter_folder / weights.WHOLE))
+    read = Target.read(checkpoint)
+    target = Target(read.embed.to(device), read.head.to(device))
+    lines = ["weights as stored"]
+    if as_served:
+        served.as_served(model)
+        target = Target(target.embed, served.four_bits(target.head), bf16_scores=True)
+        lines = [
+            "weights as served: the drafter's linears and the head at 4 bits,"
+            " the head's scores in bfloat16"
+        ]
+    lines += [f"the drafter's {name} is not read" for name in unread]
+    return model.to(device), target, Reading.dflash2(config), lines, unread
 
 
 def _by_run(

@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0 (2026-11-20)
+
+Stage 1's comparison of prompt rows with reply rows: from the rows a prompt pass computed, the published DFlash2
+drafter proposes nearly what it proposes from the rows of the reply that wrote the same tokens. Walking alone, it
+takes 0.004 to 0.029 fewer tokens a round from prompt rows, by class. No weights yet, and no result yet on whether
+the approach works.
+
+- `receipts/2026-11-20-rows`: the comparison on G0's judged launch, which recorded each reply and then the same
+  tokens sent again as one prompt. Over 64 replies a class, the drafter alone takes 5.018 tokens a round from reply
+  rows and 5.007 from prompt rows for code, 3.431 and 3.402 for agent, 2.402 and 2.398 for chat, 2.089 and 2.086
+  for ja, and 2.034 and 2.025 for prose. Its first draft is the same from both at 95.7 to 99.2% of positions, and
+  all seven drafts at 56.5 to 88.4%.
+- `open-dneo rows FOLDER --drafter D --target T --run RUN` (`open_dneo.rows`): pairs each request with its reply's
+  stream and with the stream whose prompt is the request's prompt and reply, and has the drafter propose at the
+  reply's positions from each kind of row. Per class it prints the drafter-alone walk over each and how often their
+  drafts agree. A reply whose prompt stream lacks a row or a context for one of its positions is counted and left
+  out.
+- Reading a recording holds one open file a stream. `score --run` and `rows` open every stream at once, and each
+  stream held four memory maps, each an open file: G0's recording of 640 streams needed 2,560, past the 1,024 many
+  systems allow a process by default. Tokens, positions and kinds are a few bytes a row, so they are now read whole,
+  and only the tapped rows stay mapped. Under a soft limit of 1,024, the receipt's `rows` held 645 open files and
+  finished, with the same report as before; with 0.3.0's reading it stopped at the start with too many open files.
+- `score.proposals` takes the positions to propose at and the row the context starts from, and `score.loaded` is
+  the loading that `score` and `rows` share.
+- `docs/plan.md`: what the comparison found, where the plan names the gap.
+
 ## 0.3.0 (2026-11-20)
 
 Gate G0 passes: the offline instrument counts a DFlash2 drafter's tokens a round within 0.013 of serving's in every

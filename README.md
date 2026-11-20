@@ -3,10 +3,12 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.3.0, 2026-11-20): a plan, a survey and an offline instrument that counts as serving does. There are no
+**Status (0.4.0, 2026-11-20): a plan, a survey and an offline instrument that counts as serving does. There are no
 weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
-([receipts](receipts/2026-11-20-g0/README.md)). Each stage will add its tools, its numbers and what did not pay.
+([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
+published DFlash2 drafter proposes nearly what it proposes from reply rows of the same tokens
+([receipts](receipts/2026-11-20-rows/README.md)). Each stage will add its tools, its numbers and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -72,6 +74,7 @@ open-dneo entrance incoai/GLM-5.3-Flash-DFlash2   # the diagonal share of its de
 open-dneo recording DIR                           # check what a server recorded with --record DIR
 open-dneo greedy DIR --target CHECKPOINT          # how much of a recording its target would have written
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # a DFlash2 drafter's tokens a round on it
+open-dneo rows DIR --drafter DRAFTER --target CHECKPOINT --run RUN   # its drafts from prompt rows and reply rows
 ```
 
 `shapes` and `entrance` read a public Hugging Face repository by HTTP range requests, without credentials. `shapes`
@@ -113,10 +116,17 @@ still differs from serving in two things. Serving chooses the drafts a reply's f
 round times; the report also gives the rounds if that round held one draft and if it held every draft. And without
 `--run` the walk is over the tokens a recording holds, which can be one fewer than the reply's.
 
-The recording these two commands need: tap k is the target's state after k layers, for GLM the mean of its four
+`rows` compares the two kinds of row a drafter can be trained on. Where a recording holds each reply of a run file
+and then the same tokens sent again as one prompt, each reply position has a row from the reply's rounds and a row
+from the prompt pass. `rows` pairs each request with both streams, reads both from the later of their first rows,
+and has the drafter propose at the reply's positions from each kind of row. Per class it prints the drafter-alone
+walk over each kind and how often the two agree on the first draft and on every draft. With the weights as served,
+the walks differed by 0.004 to 0.029 tokens a round ([receipts/2026-11-20-rows](receipts/2026-11-20-rows/README.md)).
+
+The recording these commands need: tap k is the target's state after k layers, for GLM the mean of its four
 residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the
-final norm. `greedy` reads that last tap, 45 for GLM-5.3-Flash. `score` reads the tap one above each of the
-drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above. TensorFold's `--record` gives no rows for
+final norm. `greedy` reads that last tap, 45 for GLM-5.3-Flash. `score` and `rows` read the tap one above each of
+the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above. TensorFold's `--record` gives no rows for
 GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in
 [receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md).
 

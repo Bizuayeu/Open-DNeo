@@ -161,6 +161,11 @@ def _view(path: Path, dtype: np.dtype | str, shape: tuple[int, ...]) -> np.ndarr
     return np.memmap(path, dtype=dtype, mode="r", shape=shape)
 
 
+def _whole(path: Path, dtype: np.dtype | str, shape: tuple[int, ...]) -> np.ndarray:
+    """`_view`'s items read into memory: no file stays open."""
+    return np.array(_view(path, dtype, shape))
+
+
 def read_summary(base: Path) -> Summary:
     """The summary of the stream `base`; ValueError if it has none or a wrong one."""
     try:
@@ -184,7 +189,14 @@ def open_stream(base: Path) -> Stream:
     shapes = {".tok": (rows,), ".pos": (rows,), ".kind": (rows,)}
     shapes[".st"] = (rows, summary.row_bytes)
     types = {".tok": "<u4", ".pos": "<u4", ".kind": "u1", ".st": "u1"}
-    views = {ext: _view(beside(base, ext), types[ext], shapes[ext]) for ext in shapes}
+    # tokens, positions and kinds are small and read whole; the tapped rows stay
+    # mapped, so that a stream holds one open file however many are open at once
+    views = {
+        ext: (_view if ext == ".st" else _whole)(
+            beside(base, ext), types[ext], shapes[ext]
+        )
+        for ext in shapes
+    }
     entry = np.dtype([("ids", "<u4", (k,)), ("logprobs", "<f4", (k,))])
     entries = 0
     if k:
