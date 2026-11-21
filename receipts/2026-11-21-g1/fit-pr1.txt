@@ -1,0 +1,5 @@
+1063 streams in 1 folders, 106 held out (one in every 10, by name); the sum of taps (6, 15, 25, 34, 43), the target fc on taps (6, 15, 25, 34, 43) as DFlash2 reads them; one row in every 4 of a stream: 123370 fitted, 12947 held; ridge 0.001 (times the mean of the Gram's diagonal); each row and its target divided by the target's size
+the taps' sizes so divided: 6 0.00342, 15 0.003382, 25 0.01122, 34 0.03385, 43 0.08853
+uniform weights 0.200,0.200,0.200,0.200,0.200: explained 0.9447 fitted, 0.9389 held; cos 0.9691 held; by part: chat-glm 0.9668 (1031), chat-human 0.9682 (1397), code-oci 0.9712 (3666), code-r1 0.9717 (2074), ja-magpie 0.9699 (910), ja-rewrite 0.9688 (1377), ja-web 0.9666 (822), prose 0.9644 (1670)
+even weights 0.407,0.412,0.124,0.041,0.016: explained 0.8522 fitted, 0.8451 held; cos 0.9207 held; by part: chat-glm 0.9117 (1031), chat-human 0.9211 (1397), code-oci 0.9336 (3666), code-r1 0.9335 (2074), ja-magpie 0.9170 (910), ja-rewrite 0.9112 (1377), ja-web 0.9021 (822), prose 0.9008 (1670)
+written: bridge-uniform.safetensors, bridge-even.safetensors

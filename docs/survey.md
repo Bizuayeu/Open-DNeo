@@ -90,13 +90,18 @@ singular directions holding the squared weight: 50%: 201, 90%: 1383, 99%: 2851 o
 - Every block is at chance, with signs split evenly. The entrance mixes all coordinates, and the five layers behind
   it were trained on the mixed ones. It cannot be moved into DNeo's non-mixing entrance as it is.
 - To carry the layers over, a linear bridge from the new entrance's output to the old one's is fitted by least
-  squares. Fitting it needs recorded rows of the target, so its quality is not known yet.
+  squares, on recorded rows of the target. Measured at step 0 on the evaluation set's open half, with DFlash2's
+  layers, mask and head, the drafter with the bridge lands 0.853 to 0.962 of DFlash2's drafts a round, by class;
+  with the bridge's matrix set to zero, 0.000 to 0.014 ([receipts](../receipts/2026-11-21-g1/README.md)). A
+  bridge from the five deepest taps (40 to 44) lands 0.904 to 0.961, ahead of one from DFlash2's own taps in three
+  classes of five and behind it most in code.
 - The bridge cannot simply be folded into the layers. A context row reaches a layer only through its key and value
   projections, so a bridge composes with those two exactly. But the published DNeo layer, like DFlash2's, has one
   key and one value projection, and its block rows are read through the same two: folded there, the bridge would
   change the block rows too. A bridge needs either key and value projections for the context alone or a matrix kept
   in the entrance, and the published DNeo layout has neither. TensorFold's GLM path does pack the context's
-  projections as a linear of their own, from the same two tensors. Which form to use is not decided.
+  projections as a linear of their own, from the same two tensors. The matrix stays in the entrance (the plan's
+  decisions, 2026-11-20). Rounded to serving's 4 bits it moved the drafts landed by 0.012 at most.
 - Limit: weight energy says nothing about how large each layer's input is, so the blocks' energy shares do not rank
   the layers.
 

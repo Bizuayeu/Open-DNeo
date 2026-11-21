@@ -244,6 +244,24 @@ class Router(nn.Module):
         return torch.einsum("t,bstd->bsd", weights, features)
 
 
+class Bridged(nn.Module):
+    """DNeo's entrance in front of DFlash2's layers: the weighted sum, bridged and normed.
+
+    `fc` [hidden, hidden] maps the router's sum to what DFlash2's entrance gave
+    before its norm, and the norm is DFlash2's (`bridge`).
+    """
+
+    def __init__(self, shape: Shape) -> None:
+        super().__init__()
+        self.router = Router(shape)
+        self.fc = nn.Linear(shape.hidden, shape.hidden, bias=False)
+        self.norm = RMSNorm(shape.hidden, shape.eps)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """[b, s, taps, hidden] to [b, s, hidden]."""
+        return self.norm(self.fc(self.router(features)))
+
+
 class Selector(nn.Module):
     """DFlash2's head: the target head's best k a position, re-scored in a chain."""
 

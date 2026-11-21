@@ -118,3 +118,17 @@ def test_a_served_drafter_holds_its_linears_at_four_bits_and_the_rest_as_it_was(
             assert torch.equal(value, before[name]), name
     kept = set(before) - rounded
     assert {"layers.0.down_proj.weight", "head.projection.weight"} <= kept
+
+
+def test_a_bridged_entrance_is_kept_as_fitted_unless_asked():
+    model = small("dflash2")
+    model.entrance = drafter.Bridged(model.shape)
+    with torch.no_grad():
+        model.entrance.fc.weight.copy_(
+            torch.randn(64, 64, generator=torch.Generator().manual_seed(3)) * 0.1
+        )
+    fitted = model.entrance.fc.weight.clone()
+    served.as_served(model)
+    assert torch.equal(model.entrance.fc.weight, fitted)
+    served.as_served(model, bridge=True)
+    assert torch.equal(model.entrance.fc.weight, served.four_bits(fitted))

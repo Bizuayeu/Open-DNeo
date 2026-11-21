@@ -1,4 +1,5 @@
-"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows, probe."""
+"""The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows, probe,
+bridge."""
 
 from __future__ import annotations
 
@@ -88,6 +89,16 @@ def parser() -> argparse.ArgumentParser:
         help="with --run, a server's log with its DFlash2 rounds: the drafts serving"
         " logged beside the instrument's at the same anchors, class by class",
     )
+    scored.add_argument(
+        "--bridge",
+        help="a file `open-dneo bridge` wrote: the entrance is DNeo's weighted sum,"
+        " bridged into the drafter's layers",
+    )
+    scored.add_argument(
+        "--bridge-served",
+        action="store_true",
+        help="with --served, the bridge at 4 bits too (it stays float32 without)",
+    )
     for command in (own, scored):
         command.add_argument(
             "folder", help="the --record folder, or any folder of streams"
@@ -120,6 +131,8 @@ def parser() -> argparse.ArgumentParser:
             a.max_tokens,
             None if a.run_file is None else Path(a.run_file),
             None if a.drafts_log is None else Path(a.drafts_log),
+            None if a.bridge is None else Path(a.bridge),
+            a.bridge_served,
         )
     )
     paired = commands.add_parser(
@@ -198,6 +211,54 @@ def parser() -> argparse.ArgumentParser:
             a.train_every,
             a.eval_every,
             a.device,
+        )
+    )
+
+    bridged = commands.add_parser(
+        "bridge",
+        help="DNeo's entrance fitted onto a DFlash2 drafter's layers, from recorded rows",
+    )
+    bridged.add_argument(
+        "folders", nargs="+", help="--record folders, or any folders of streams"
+    )
+    bridged.add_argument(
+        "--drafter",
+        required=True,
+        help="the DFlash2 drafter's folder: config.json and model.safetensors",
+    )
+    bridged.add_argument(
+        "--out", required=True, help="where bridge-LABEL.safetensors are written"
+    )
+    bridged.add_argument(
+        "--weights",
+        action="append",
+        help="the sum's weights, a tap each in the drafter's order, as NAME=1,2,... or"
+        " 1,2,...: fitted beside the uniform and even ones",
+    )
+    bridged.add_argument(
+        "--parts",
+        action="append",
+        help="a file of lines: stream name, a tab, its part (again for more)",
+    )
+    bridged.add_argument("--ridge", type=float, default=1e-3)
+    bridged.add_argument("--held-every", type=int, default=10)
+    bridged.add_argument("--train-every", type=int, default=4)
+    bridged.add_argument(
+        "--inputs",
+        help="the taps the sum reads, comma-separated, as many as the drafter's"
+        " (default: the drafter's own)",
+    )
+    bridged.set_defaults(
+        run=lambda a: _with_torch("bridge").report(
+            [Path(folder) for folder in a.folders],
+            Path(a.drafter),
+            Path(a.out),
+            list(a.weights or []),
+            [Path(listing) for listing in a.parts or []],
+            a.ridge,
+            a.held_every,
+            a.train_every,
+            tuple(int(t) for t in a.inputs.split(",")) if a.inputs else (),
         )
     )
     return top

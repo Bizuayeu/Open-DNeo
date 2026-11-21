@@ -58,12 +58,17 @@ def four_bits(weight: torch.Tensor) -> torch.Tensor:
 
 
 @torch.no_grad()
-def as_served(model: drafter.Drafter) -> None:
-    """Rounds a drafter's linears to 4 bits in place, as serving loads them."""
+def as_served(model: drafter.Drafter, bridge: bool = False) -> None:
+    """Rounds a drafter's linears to 4 bits in place, as serving loads them.
+
+    A bridged entrance's matrix (`drafter.Bridged`) is no linear serving loads: it
+    stays as fitted unless `bridge`.
+    """
     names = [
         f"layers.{i}.{name}" for i in range(model.shape.layers) for name in LINEARS
     ]
-    if isinstance(model.entrance, drafter.Fused):
+    bridged = isinstance(model.entrance, drafter.Bridged)
+    if isinstance(model.entrance, drafter.Fused) or (bridge and bridged):
         names.append("entrance.fc")
     for name in names:
         weight = model.get_parameter(f"{name}.weight")

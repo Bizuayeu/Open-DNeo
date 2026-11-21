@@ -64,11 +64,38 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     assert cli.main([*asked[:6], "--served", "--run", "run.jsonl"]) == 1
     logged = ["--run", "run.jsonl", "--drafts-log", "serve.log"]
     assert cli.main([*asked[:6], *logged]) == 1
+    assert (
+        cli.main([*asked[:6], "--served", "--bridge", "b.st", "--bridge-served"]) == 1
+    )
     assert seen == [
         (Path("rec"), Path("ck"), "cpu", True, None),
         (Path("rec"), Path("ck"), "cpu", False, Path("nx")),
-        (Path("rec"), Path("dr"), Path("ck"), "cuda", False, False, None, None, None),
-        (Path("rec"), Path("dr"), Path("ck"), "cpu", True, True, 48, None, None),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cuda",
+            False,
+            False,
+            None,
+            None,
+            None,
+            None,
+            False,
+        ),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cpu",
+            True,
+            True,
+            48,
+            None,
+            None,
+            None,
+            False,
+        ),
         (
             Path("rec"),
             Path("dr"),
@@ -79,6 +106,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             Path("run.jsonl"),
             None,
+            None,
+            False,
         ),
         (
             Path("rec"),
@@ -90,9 +119,24 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             Path("run.jsonl"),
             Path("serve.log"),
+            None,
+            False,
+        ),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cpu",
+            False,
+            True,
+            None,
+            None,
+            None,
+            Path("b.st"),
+            True,
         ),
     ]
-    assert capfdbinary.readouterr().out == b"g\ng\ns\ns\ns\ns\n"
+    assert capfdbinary.readouterr().out == b"g\ng\ns\ns\ns\ns\ns\n"
 
 
 def test_a_torch_command_says_what_it_needs_where_torch_is_not(monkeypatch):
@@ -166,3 +210,31 @@ def test_probe_passes_its_folders_and_choices(monkeypatch, capfdbinary):
         ),
     ]
     assert capfdbinary.readouterr().out == b"p\np\n"
+
+
+def test_bridge_passes_its_folders_weights_and_split(monkeypatch, capfdbinary):
+    from open_dneo import bridge
+
+    seen = []
+    monkeypatch.setattr(bridge, "report", lambda *a: seen.append(a) or (["b"], True))
+    asked = ["bridge", "r1", "r2", "--drafter", "dr", "--out", "o"]
+    assert cli.main(asked) == 0
+    more = ["--weights", "a=1,2", "--weights", "3,4", "--parts", "p.tsv"]
+    more += ["--ridge", "0.1", "--held-every", "5", "--train-every", "2"]
+    more += ["--inputs", "40,41"]
+    assert cli.main([*asked, *more]) == 0
+    assert seen == [
+        ([Path("r1"), Path("r2")], Path("dr"), Path("o"), [], [], 1e-3, 10, 4, ()),
+        (
+            [Path("r1"), Path("r2")],
+            Path("dr"),
+            Path("o"),
+            ["a=1,2", "3,4"],
+            [Path("p.tsv")],
+            0.1,
+            5,
+            2,
+            (40, 41),
+        ),
+    ]
+    assert capfdbinary.readouterr().out == b"b\nb\n"

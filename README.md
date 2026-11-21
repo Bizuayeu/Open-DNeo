@@ -3,14 +3,18 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.5.0, 2026-11-20): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
-pilot recording and layer probe. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
+**Status (0.6.0, 2026-11-21): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
+pilot recording, layer probe and step-0 bridge. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
 published DFlash2 drafter proposes nearly what it proposes from reply rows of the same tokens
 ([receipts](receipts/2026-11-20-rows/README.md)). On a pilot of 609,309 such rows, the five taps before the final
 row hold more of the target's next tokens than the five DFlash2 reads
-([receipts](receipts/2026-11-20-pilot/README.md)). Each stage will add its tools, its numbers and what did not pay.
+([receipts](receipts/2026-11-20-pilot/README.md)). With DNeo's entrance bridged by least squares onto DFlash2's
+layers, the drafter lands 0.853 to 0.962 of DFlash2's drafts a round before any training. A bridge from those five
+deeper taps led one from DFlash2's own in three classes of five, short of the rule set before the numbers, so
+Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). Each stage will add its tools, its
+numbers and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -79,6 +83,8 @@ open-dneo greedy DIR --target CHECKPOINT --save NEXT   # and its choice at every
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # a DFlash2 drafter's tokens a round on it
 open-dneo rows DIR --drafter DRAFTER --target CHECKPOINT --run RUN   # its drafts from prompt rows and reply rows
 open-dneo probe DIR --target CHECKPOINT --next NEXT   # which taps hold the target's next tokens
+open-dneo bridge DIR --drafter DRAFTER --out OUT   # DNeo's entrance fitted onto the drafter's layers
+open-dneo score DIR --drafter DRAFTER --target CHECKPOINT --bridge BRIDGE   # and scored with it
 ```
 
 `shapes` and `entrance` read a public Hugging Face repository by HTTP range requests, without credentials. `shapes`
@@ -137,10 +143,23 @@ often the best token is the target's own choice at p + k, as `greedy --save` kep
 how often the commonest choice is right, and with `--parts` (a stream's name and its part a line) the scores by
 part. The final tap at k 0 maps a row to itself and scores 1, which checks that the choices sit beside their rows.
 
+`bridge` fits DNeo's entrance onto a DFlash2 drafter's layers. DNeo's entrance is a weighted sum of tapped rows;
+DFlash2's sets its five taps' rows side by side and mixes them through `fc`. `bridge` fits a matrix B by ridge least
+squares from the weighted sum to `fc`'s output, both divided by the size of `fc`'s output, on the rows of the folders
+given, and holds out one stream in `--held-every` by name. It reports the share of `fc`'s output explained and the
+cosine on the held rows, by part with `--parts`, and writes `bridge-LABEL.safetensors` (B, the weights and the taps)
+for uniform weights, for weights that make the taps' sizes even, and for any given with `--weights`. `--inputs` lets
+the sum read other taps than the drafter's, still fitted to `fc` on the drafter's own. `score --bridge FILE` then
+scores the drafter with that entrance: DNeo's weighted sum, B, and DFlash2's norm, layers, mask and head as they are,
+with B in float32 (`--bridge-served` rounds it to 4 bits with the rest). With `--run`, `score` also gives, class by
+class, the walk in which the drafter makes every round, without copies. At step 0 the bridged drafter landed 0.853 to
+0.962 of DFlash2's drafts a round ([receipts/2026-11-21-g1](receipts/2026-11-21-g1/README.md)).
+
 The recording these commands need: tap k is the target's state after k layers, for GLM the mean of its four
 residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the
 final norm. `greedy` and `probe` read that last tap, 45 for GLM-5.3-Flash. `score` and `rows` read the tap one above each of
-the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above. TensorFold's `--record` gives no rows for
+the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above, or with `--bridge` the taps the
+bridge names. TensorFold's `--record` gives no rows for
 GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in
 [receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md).
 

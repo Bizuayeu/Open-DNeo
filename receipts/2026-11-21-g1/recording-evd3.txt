@@ -1,0 +1,4 @@
+streams 320: 320 finished, 0 unfinished
+rows 296398: 228642 prompt, 67756 reply, 0 with a .top entry
+layout taps [6, 15, 25, 34, 40, 41, 42, 43, 44, 45] x 4096 bf16, 81920 bytes a row: 320 streams, 296398 rows
+findings 0

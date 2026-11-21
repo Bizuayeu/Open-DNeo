@@ -1,0 +1,12 @@
+weights as served: the drafter's linears and the head at 4 bits, the head's scores in bfloat16
+run: 320 requests, 320 paired with a stream
+code: 64 replies; serving 16094 tokens over 3375 rounds, 4.769 a round; the instrument 16094 over 3374, 4.770 a round; apart 0.001; a first round of 1 draft or of every draft: 3398 or 3359 rounds
+code: the drafter alone, 3207 rounds give 16094 tokens, 5.018 a round
+agent: 64 replies; serving 4004 tokens over 1117 rounds, 3.585 a round; the instrument 4004 over 1113, 3.597 a round; apart 0.013; a first round of 1 draft or of every draft: 1135 or 1106 rounds
+agent: the drafter alone, 1167 rounds give 4004 tokens, 3.431 a round
+chat: 64 replies; serving 15693 tokens over 6540 rounds, 2.400 a round; the instrument 15693 over 6541, 2.399 a round; apart 0.000; a first round of 1 draft or of every draft: 6558 or 6537 rounds
+chat: the drafter alone, 6532 rounds give 15693 tokens, 2.402 a round
+ja: 64 replies; serving 15736 tokens over 7548 rounds, 2.085 a round; the instrument 15736 over 7544, 2.086 a round; apart 0.001; a first round of 1 draft or of every draft: 7553 or 7538 rounds
+ja: the drafter alone, 7531 rounds give 15736 tokens, 2.089 a round
+prose: 64 replies; serving 16109 tokens over 7929 rounds, 2.032 a round; the instrument 16109 over 7923, 2.033 a round; apart 0.002; a first round of 1 draft or of every draft: 7928 or 7923 rounds
+prose: the drafter alone, 7919 rounds give 16109 tokens, 2.034 a round

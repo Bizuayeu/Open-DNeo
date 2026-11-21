@@ -1,0 +1,13 @@
+weights as served: the drafter's linears and the head at 4 bits, the head's scores in bfloat16
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-null.safetensors as fitted (float32); DFlash2's layers, mask and head as they are
+run: 320 requests, 320 paired with a stream
+code: 64 replies; serving 16094 tokens over 3375 rounds, 4.769 a round; the instrument 16094 over 14256, 1.129 a round; apart 3.640; a first round of 1 draft or of every draft: 14256 or 14256 rounds
+code: the drafter alone, 15965 rounds give 16094 tokens, 1.008 a round
+agent: 64 replies; serving 4004 tokens over 1117 rounds, 3.585 a round; the instrument 4004 over 3108, 1.288 a round; apart 2.296; a first round of 1 draft or of every draft: 3108 or 3108 rounds
+agent: the drafter alone, 4002 rounds give 4004 tokens, 1.000 a round
+chat: 64 replies; serving 15693 tokens over 6540 rounds, 2.400 a round; the instrument 15693 over 15540, 1.010 a round; apart 1.390; a first round of 1 draft or of every draft: 15540 or 15540 rounds
+chat: the drafter alone, 15570 rounds give 15693 tokens, 1.008 a round
+ja: 64 replies; serving 15736 tokens over 7548 rounds, 2.085 a round; the instrument 15736 over 15571, 1.011 a round; apart 1.074; a first round of 1 draft or of every draft: 15571 or 15571 rounds
+ja: the drafter alone, 15724 rounds give 15736 tokens, 1.001 a round
+prose: 64 replies; serving 16109 tokens over 7929 rounds, 2.032 a round; the instrument 16109 over 15585, 1.034 a round; apart 0.998; a first round of 1 draft or of every draft: 15585 or 15585 rounds
+prose: the drafter alone, 15887 rounds give 16109 tokens, 1.014 a round

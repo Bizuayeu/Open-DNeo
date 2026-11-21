@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.6.0 (2026-11-21)
+
+Stage 1's step-0 bridge, gate G1: DNeo's entrance, a weighted sum of taps, fitted by least squares onto the published
+DFlash2 drafter's layers, mask and head. Before any training, the bridged drafter lands 0.853 to 0.962 of DFlash2's
+drafts a round, by class, so arm A leads. A bridge from the five deepest taps led one from DFlash2's own taps in three
+classes of five; by the rule written before those numbers, Stage 2's entrance reads DFlash2's five taps, and the first
+training run compares four sets of taps. No weights yet, and no result yet on whether the approach works.
+
+- `receipts/2026-11-21-g1`: the fits and the step-0 scores on the evaluation set's open half. On G0's recording,
+  DFlash2's taps with uniform weights, with `fc`'s block sizes, with B at 4 bits, and with B at zero (0.000 to 0.014
+  of DFlash2's drafts). On a recording of the same prompts at ten taps, which gives G0's recording's instrument lines
+  on the taps they share, the five deepest taps against DFlash2's five, both fitted on the pilot's nine parts.
+- `open-dneo bridge FOLDER... --drafter D --out O` (`open_dneo.bridge`): B fitted by ridge least squares from DNeo's
+  weighted sum of taps to the output of DFlash2's `fc`, with streams held out and scores by part; `--weights` for
+  more weights than the uniform and even ones, `--inputs` for other taps in the sum. It writes
+  `bridge-LABEL.safetensors`: B, the weights and the taps.
+- `open-dneo score --bridge FILE` (`drafter.Bridged`): the drafter scored with that entrance, B in float32 or, with
+  `--bridge-served`, at 4 bits. With `--run`, each class also gets the walk in which the drafter makes every round.
+- `docs/plan.md`: G1 read as drafts landed and its result; the taps of Stage 2's entrance, the rule that chose them,
+  and the first run's comparison of four sets; G2 read at each drafter's own cut, chosen before G2; the fifth move, a
+  cross-entropy on the target's own greedy choices, and the first run's labels; the entrance that keeps its matrix,
+  and what arm A's entrance does not test; Stage 2's body built from MIT-licensed weights alone; the target's own
+  replies in the first recording, and the streams held out by prompt; where the 1% of G2 and G3 comes from, now a
+  placeholder.
+- `docs/survey.md`: the entrance, measured at step 0.
+
 ## 0.5.0 (2026-11-20)
 
 Stage 1's pilot recording and layer probe: 609,309 prompt-pass rows of ten parts of public text, chosen by one rule

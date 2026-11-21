@@ -2,7 +2,7 @@
 
 [DNeo](https://arxiv.org/abs/2611.21925) の drafter の重みを、手元の機材で作るための道具と手順です。配信エンジンが記録した行から学習します。論文の著者とは関係のない、独立の非公式プロジェクトです。
 
-**状態（0.5.0、2026-11-20）：計画と下調べと、配信と同じに数える手元の物差し、Stage 1 の試しの記録と層の probe までです。重みはまだ無く、この方法がうまくいくことを示す結果もありません。** 門 G0 で、物差しの「1 round の token」は、評価の組のうち封をしていない半分の、どの class でも配信の数と 0.013 以内でした（[受領証](receipts/2026-11-20-g0/README.md)、英語）。記録の安い prompt の通り道の行からでも、公開されている DFlash2 の drafter は、同じ token の返事の行からとほぼ同じ案を出しました（[受領証](receipts/2026-11-20-rows/README.md)、英語）。試しに記録したその行 609,309 行では、最後の行の手前の 5 つの tap（40〜44）が、DFlash2 の読む 5 つより、本体の次の token を多く持っていました（[受領証](receipts/2026-11-20-pilot/README.md)、英語）。段が進むごとに、道具と数と、効かなかったことを足していきます。
+**状態（0.6.0、2026-11-21）：計画と下調べと、配信と同じに数える手元の物差し、Stage 1 の試しの記録と層の probe と、学習の前の橋までです。重みはまだ無く、この方法がうまくいくことを示す結果もありません。** 門 G0 で、物差しの「1 round の token」は、評価の組のうち封をしていない半分の、どの class でも配信の数と 0.013 以内でした（[受領証](receipts/2026-11-20-g0/README.md)、英語）。記録の安い prompt の通り道の行からでも、公開されている DFlash2 の drafter は、同じ token の返事の行からとほぼ同じ案を出しました（[受領証](receipts/2026-11-20-rows/README.md)、英語）。試しに記録したその行 609,309 行では、最後の行の手前の 5 つの tap（40〜44）が、DFlash2 の読む 5 つより、本体の次の token を多く持っていました（[受領証](receipts/2026-11-20-pilot/README.md)、英語）。DNeo の入口を最小二乗で DFlash2 の層へつなぐと、drafter は学習の前から DFlash2 の当たった draft の 0.853〜0.962 を当てました。その深い 5 つの tap からの橋は、DFlash2 自身の 5 つからの橋より 5 class のうち 3 つで上でしたが、数の前に置いた規則に届かず、Stage 2 は DFlash2 の tap を読みます（[受領証](receipts/2026-11-21-g1/README.md)、英語）。段が進むごとに、道具と数と、効かなかったことを足していきます。
 
 [English](README.md)
 
@@ -54,6 +54,8 @@ open-dneo greedy DIR --target CHECKPOINT --save NEXT   # それに加え、行�
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # その記録の上での、DFlash2 の 1 round の token
 open-dneo rows DIR --drafter DRAFTER --target CHECKPOINT --run RUN   # prompt の行と返事の行からの案の比べ
 open-dneo probe DIR --target CHECKPOINT --next NEXT   # どの tap が本体の次の token を持っているか
+open-dneo bridge DIR --drafter DRAFTER --out OUT   # DNeo の入口を drafter の層へつなぐ当てはめ
+open-dneo score DIR --drafter DRAFTER --target CHECKPOINT --bridge BRIDGE   # その入口で数える
 ```
 
 `shapes` と `entrance` は、Hugging Face の公開リポジトリを HTTP の range で読みます。認証は要りません。`shapes` は safetensors の header だけを読みます。`entrance` は tensor を 1 個だけ取得し（この例では 160 MiB）、数 GB の memory を使います。
@@ -74,7 +76,9 @@ open-dneo probe DIR --target CHECKPOINT --next NEXT   # どの tap が本体の�
 
 `probe` は、記録のどの tap が「本体が次に書く物」を持っているかを調べます。tap ごとに、また並べた tap の組（`--set 6,15,25,34,43`）ごとに、位置 p の行から位置 p + k の本体の最後の行（`--k`、既定は 1・2・3）への切片つきの線形の写しを、大半の stream の上で ridge の最小二乗で当てはめます。名の順に `--held-every` 本に 1 本を取っておき、その stream で、写した行を本体の head に通し、一番の token が p + k の本体自身の選び（`greedy --save` が残した物）と同じ割合を数えます。床（一番多い選びがそのまま当たる割合）も出し、`--parts`（1 行に stream の名とその part）があれば part ごとにも出します。最後の tap の k 0 は行をそれ自身へ写すので 1 になり、選びが行と並んでいることの確かめになります。
 
-これらの command が要る記録：tap k は「本体の k 層を通ったあとの状態」です。GLM では 4 本の residual stream の平均で、DFlash2 の drafter が読む物と同じです。層の数と同じ番号の tap は、最後の norm のあとの行です。`greedy` と `probe` はその最後の tap（GLM-5.3-Flash では 45）を読みます。`score` と `rows` は、drafter の `target_layer_ids` のそれぞれに 1 を足した tap（上の drafter では 6・15・25・34・43）を読みます。TensorFold の `--record` は、GLM の行をまだ出しません。このプロジェクトが使っている GLM 用の recorder も、まだ公開していません。その最初の確かめで分かった事は、[receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md)（英語）にあります。
+`bridge` は、DNeo の入口を DFlash2 の drafter の層へつなぎます。DNeo の入口は tap の行の重み付き和で、DFlash2 の入口は 5 つの tap の行を並べて `fc` で混ぜます。`bridge` は、与えた folder の行の上で、重み付き和から `fc` の出力への行列 B を ridge の最小二乗で当てはめます（どちらも `fc` の出力の大きさで割ります）。名の順に `--held-every` 本に 1 本を取っておき、その行で `fc` の出力を説明する割合と cos を出し、`--parts` があれば part ごとにも出します。書くのは `bridge-LABEL.safetensors`（B と重みと tap）で、一様の重み、tap の大きさをそろえる重み、`--weights` で与えた重みの分です。`--inputs` で、和が drafter と別の tap を読めます（目標は drafter 自身の tap の上の `fc` のまま）。`score --bridge FILE` は、その入口で drafter を数えます。入口は DNeo の重み付き和、B、DFlash2 の norm で、層・mask・head は DFlash2 のままです。B は float32 のままで、`--bridge-served` を付けると他と一緒に 4 bit に丸めます。`--run` を付けると、`score` は class ごとに、copy なしで毎 round を drafter が出す歩みも出します。学習の前（step 0）の橋つきの drafter は、DFlash2 の当たった draft の 0.853〜0.962 を当てました（[receipts/2026-11-21-g1](receipts/2026-11-21-g1/README.md)、英語）。
+
+これらの command が要る記録：tap k は「本体の k 層を通ったあとの状態」です。GLM では 4 本の residual stream の平均で、DFlash2 の drafter が読む物と同じです。層の数と同じ番号の tap は、最後の norm のあとの行です。`greedy` と `probe` はその最後の tap（GLM-5.3-Flash では 45）を読みます。`score` と `rows` は、drafter の `target_layer_ids` のそれぞれに 1 を足した tap（上の drafter では 6・15・25・34・43）を読み、`--bridge` があれば橋の名指す tap を読みます。TensorFold の `--record` は、GLM の行をまだ出しません。このプロジェクトが使っている GLM 用の recorder も、まだ公開していません。その最初の確かめで分かった事は、[receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md)（英語）にあります。
 
 ## 出どころと license
 

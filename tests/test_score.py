@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import torch
 
-from open_dneo import drafter, recording, rounds, score, served, weights
+from open_dneo import bridge, drafter, recording, rounds, score, served, weights
 
 from .test_drafter import receipt
 from .test_hub import safetensors_blob
@@ -742,6 +742,10 @@ def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
             f" {abs((len(reply) - 1) / given - tokens / len(lane)):.3f};"
             f" a first round of 1 draft or of every draft: {one} or {every} rounds"
         )
+        # every round the drafter's, over the same reply: no copies
+        said.append(
+            f"{klass}: the drafter alone, {alone_said(score.steps(reply, found))}"
+        )
     assert lines[1:] == ["run: 2 requests, 2 paired with a stream", *said]
 
 
@@ -929,3 +933,81 @@ def test_report_can_score_with_the_weights_as_serving_holds_them(tmp_path, monke
     assert not torch.equal(target_used.head, target.head)
     for name, parameter in drafter_used.named_parameters():
         assert torch.equal(parameter, model.get_parameter(name)), name
+
+
+def test_report_with_an_exact_bridge_scores_as_dflash2_does(tmp_path):
+    rng = np.random.default_rng(12)
+    matrix = rng.standard_normal((HIDDEN, HIDDEN)).astype(np.float32)
+    fc = np.concatenate([0.25 * matrix, 0.75 * matrix], axis=1)
+    drafted, checkpoint_folder, _ = folders(
+        tmp_path, {"fc.weight": ("F32", [HIDDEN, 2 * HIDDEN], fc.tobytes())}
+    )
+    values, tokens = drawn(16)
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=3)
+    path = tmp_path / "b.safetensors"
+    bridge.write(path, matrix, [0.25, 0.75], TAKEN)
+    plain, _ = score.report(root, drafted, checkpoint_folder)
+    lines, sound = score.report(root, drafted, checkpoint_folder, bridge=path)
+    assert sound
+    assert lines[1] == (
+        "the entrance: DNeo's weighted sum of taps (5, 9), weights 0.250,0.750,"
+        " bridged by b.safetensors as fitted (float32); DFlash2's layers, mask and"
+        " head as they are"
+    )
+    assert lines[2:] == plain[1:]
+
+
+def test_a_bridge_is_held_at_4_bits_only_when_asked(tmp_path, monkeypatch):
+    drafted, checkpoint_folder, _ = folders(tmp_path, hidden=64)
+    values, tokens = drawn(10, hidden=64)
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=3)
+    path = tmp_path / "b.safetensors"
+    bridge.write(path, np.eye(64, dtype=np.float32), [0.5, 0.5], TAKEN)
+    asked = []
+    monkeypatch.setattr(
+        served, "as_served", lambda model, bridge=False: asked.append(bridge)
+    )
+    lines, _ = score.report(
+        root, drafted, checkpoint_folder, as_served=True, bridge=path
+    )
+    assert asked == [False] and lines[1].endswith(
+        "bridged by b.safetensors as fitted (float32); DFlash2's layers, mask and"
+        " head as they are"
+    )
+    lines, _ = score.report(
+        root,
+        drafted,
+        checkpoint_folder,
+        as_served=True,
+        bridge=path,
+        bridge_served=True,
+    )
+    assert asked == [False, True] and " bridged by b.safetensors at 4 bits;" in lines[1]
+
+
+def test_a_bridge_of_other_taps_makes_the_reading_take_them(tmp_path):
+    rng = np.random.default_rng(13)
+    matrix = rng.standard_normal((HIDDEN, HIDDEN)).astype(np.float32)
+    fc = np.concatenate([0.25 * matrix, 0.75 * matrix], axis=1)
+    drafted, checkpoint_folder, _ = folders(
+        tmp_path, {"fc.weight": ("F32", [HIDDEN, 2 * HIDDEN], fc.tobytes())}
+    )
+    values, tokens = drawn(16)
+    values[:, STORED.index(2)] = values[:, STORED.index(5)]  # tap 2 holds tap 5's rows
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=3)
+    path = tmp_path / "b.safetensors"
+    bridge.write(path, matrix, [0.25, 0.75], (2, 9))
+    *_, reading, _, _ = score.loaded(drafted, checkpoint_folder, "cpu", False, path)
+    assert reading.taps == (2, 9)
+    plain, _ = score.report(root, drafted, checkpoint_folder)
+    lines, sound = score.report(root, drafted, checkpoint_folder, bridge=path)
+    assert sound and "weighted sum of taps (2, 9)," in lines[1]
+    assert lines[2:] == plain[1:]
+    # a stream without tap 2 cannot be read through this bridge
+    other = tmp_path / "other"
+    on_disk(other, values[:, [0, 2]], tokens, first=0, prompt=3, taps=(9, 5))
+    lines, sound = score.report(other, drafted, checkpoint_folder, bridge=path)
+    assert not sound and "0: the stream holds taps [9, 5], not [2]" in lines

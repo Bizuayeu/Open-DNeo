@@ -20,6 +20,7 @@ linears and its 4-bit copy of the target's head, whose scores it keeps in bfloat
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from . import bridge as bridging
 from . import drafter, logged, recording, rounds, runs, served, weights
 
 # Anchors a pass unless told otherwise: at a vocabulary of 154,880 and 7 drafts an
@@ -300,6 +302,8 @@ def report(
     max_new: int | None = None,
     run: Path | None = None,
     drafts_log: Path | None = None,
+    bridge: Path | None = None,
+    bridge_served: bool = False,
 ) -> tuple[list[str], bool]:
     """A DFlash2 drafter's rounds over the replies recorded under `root`.
 
@@ -323,9 +327,14 @@ def report(
     With a run, `drafts_log` (a server's log with its DFlash2 rounds, `logged`)
     sets the drafts serving logged beside the instrument's at the same anchors, by
     class. Not sound if a logged anchor is not its stream's token.
+
+    With `bridge` (a file `bridge.report` wrote) the drafter's entrance is DNeo's
+    weighted sum bridged into its layers (`bridge.entrance`), its layers, mask and
+    head as they are: the bridge's step-0 score, G1. The bridge stays float32 as
+    fitted, or with `bridge_served` and `as_served` goes to 4 bits too.
     """
     model, target, reading, lines, unread = loaded(
-        drafter_folder, checkpoint, device, as_served
+        drafter_folder, checkpoint, device, as_served, bridge, bridge_served
     )
     if drafts_log is not None and run is None:
         return lines + ["a drafts log is read beside a run file"], False
@@ -379,29 +388,49 @@ def report(
 
 
 def loaded(
-    drafter_folder: Path, checkpoint: Path, device: str, as_served: bool
+    drafter_folder: Path,
+    checkpoint: Path,
+    device: str,
+    as_served: bool,
+    bridge_file: Path | None = None,
+    bridge_served: bool = False,
 ) -> tuple[drafter.Drafter, Target, Reading, list[str], list[str]]:
     """The drafter, the target and their reading, a report's first lines, and the
     names of the drafter's tensors that are not read.
 
     With `as_served` the drafter's linears and the head are rounded to 4 bits and
-    the head's scores to bfloat16, as serving holds them by default.
+    the head's scores to bfloat16, as serving holds them by default. With
+    `bridge_file` the entrance is bridged (`report`).
     """
     config = json.loads((drafter_folder / "config.json").read_text(encoding="utf-8"))
     model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
     unread = drafter.load(model, weights.read(drafter_folder / weights.WHOLE))
+    reading = Reading.dflash2(config)
+    entered = []
+    if bridge_file is not None:
+        matrix, tap_weights, taps = bridging.read(bridge_file)
+        model.entrance = bridging.entrance(model, matrix, tap_weights)
+        reading = dataclasses.replace(reading, taps=taps)
+        held = "at 4 bits" if as_served and bridge_served else "as fitted (float32)"
+        shown = ",".join(f"{w:.3f}" for w in tap_weights)
+        entered.append(
+            f"the entrance: DNeo's weighted sum of taps {reading.taps}, weights {shown},"
+            f" bridged by {bridge_file.name} {held}; DFlash2's layers, mask and head"
+            " as they are"
+        )
     read = Target.read(checkpoint)
     target = Target(read.embed.to(device), read.head.to(device))
     lines = ["weights as stored"]
     if as_served:
-        served.as_served(model)
+        served.as_served(model, bridge=bridge_served)
         target = Target(target.embed, served.four_bits(target.head), bf16_scores=True)
         lines = [
             "weights as served: the drafter's linears and the head at 4 bits,"
             " the head's scores in bfloat16"
         ]
+    lines += entered
     lines += [f"the drafter's {name} is not read" for name in unread]
-    return model.to(device), target, Reading.dflash2(config), lines, unread
+    return model.to(device), target, reading, lines, unread
 
 
 def _by_run(
@@ -459,8 +488,9 @@ def _by_run(
             )
 
         lane = walk()
+        own = steps(request.reply, proposed)
         classes.setdefault(request.klass, []).append(
-            (request, lane, len(walk(1)), len(walk(proposed.drafts.shape[1])))
+            (request, lane, len(walk(1)), len(walk(proposed.drafts.shape[1])), own)
         )
     for klass, taken in classes.items():
         try:
@@ -478,6 +508,10 @@ def _by_run(
             f" {instrument:.3f} a round; apart {abs(serving - instrument):.3f};"
             f" a first round of 1 draft or of every draft:"
             f" {sum(x[2] for x in taken)} or {sum(x[3] for x in taken)} rounds"
+        )
+        alone = [given for *_, own in taken for given in own]
+        lines.append(
+            f"{klass}: the drafter alone, {_alone(alone) if alone else '0 rounds'}"
         )
     if drafts_log is not None:
         lines.append(
