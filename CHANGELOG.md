@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1 (2026-11-22)
+
+The README explains parallel drafting for newcomers. No new tools or numbers, and still no weights.
+
+- `README.md` and `README.ja.md`: how a target checks a drafter's guesses, also at a temperature; why the drafter
+  guesses at temperature 0; how a parallel drafter differs from a sequential one; and what DNeo does instead of
+  guessing one token at a time.
+
 ## 0.6.0 (2026-11-21)
 
 Stage 1's step-0 bridge, gate G1: DNeo's entrance, a weighted sum of taps, fitted by least squares onto the published

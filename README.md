@@ -3,7 +3,7 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.6.0, 2026-11-21): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
+**Status (0.6.1, 2026-11-22): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
 pilot recording, layer probe and step-0 bridge. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
@@ -28,6 +28,41 @@ code is not public.
 This project works out how to make DNeo weights for another target, and publishes the tools, the steps and the
 measurements. The first target is GLM-5.3-Flash served by [TensorFold](https://github.com/ashhart/TensorFold) on two
 GB10 machines (DGX Spark class).
+
+## Parallel drafting, for newcomers
+
+**Speculative decoding.** A small model, the *drafter*, guesses the next few tokens, and the target model checks all
+of them in one pass. At each position the target picks its own token the way it would writing alone, and keeps the
+guess if it is the same token. At the first position where they differ, it drops the guess and writes its own token.
+So a reply is the same with the drafter or without it, also when the target writes at a temperature (TensorFold takes
+its sampling's random numbers from a fixed key, so the text is the same; with speculative sampling in general, the
+reply has the same distribution rather than the same text). One such check is a *round*. The more guesses a round
+keeps, the fewer target passes a reply takes.
+
+**The drafter guesses at temperature 0.** When the target draws its tokens at a temperature, a guess is kept with the
+probability that the target draws that token. So a drafter that commits to one guess does best with the token the
+target is most likely to draw. The drafter guesses at temperature 0 (always the most likely token), and this project
+trains it to hit the target's most likely token.
+
+**Two ways to draft.** A sequential drafter, such as EAGLE or an MTP head, writes its guesses one at a time: each
+guess is one more run of the drafter, and it sees the guesses before it. A parallel drafter, such as DFlash or DNeo,
+writes the whole block in one run. The block's rows start as mask tokens, so no row knows what the rows before it
+guessed. One run a round is cheaper than one run a guess, but the later guesses are made without the earlier ones,
+and they are kept less often.
+
+**What DNeo does instead of guessing one at a time.** The drafter's layers run once a round. On top of that, DNeo
+gives the later guesses what they lack, where that is cheap:
+
+- **Only the head sees the guesses before (a causal head).** The head, the last small step that turns states into
+  token scores, is the only part that goes position by position. It corrects every score in the vocabulary from the
+  token it chose at the position before. DFlash2's head does this for its 16 best candidates. DNeo's does it for all
+  of them, with a low-rank correction.
+- **The next round sees where the last one missed (rejection memory).** The target's hidden states at the positions
+  whose guesses were rejected join the drafter's context in the next round. Verification has already computed them,
+  so this adds no parameters and no work for the target. This project's first version leaves it out (see
+  [The approach](#the-approach)).
+- **The rows of a block do not read one another.** In the paper, leaving this attention out was slightly better and
+  made the run cheaper.
 
 ## Why not the paper's recipe
 
