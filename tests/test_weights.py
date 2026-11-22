@@ -50,6 +50,55 @@ def test_tensors_come_in_the_types_the_file_holds(tmp_path):
     assert read["none"].shape == (0,) and read["none"].dtype == torch.int64
 
 
+def test_arrays_written_are_read_back_as_they_were(tmp_path):
+    import numpy as np
+
+    path = tmp_path / "w.safetensors"
+    written = {
+        "a.weight": np.arange(6, dtype="<f4").reshape(2, 3) / 7,
+        "b.taps": np.array([40, 44], "<i8"),
+    }
+    weights.write(path, written, {"note": "x"})
+    back = weights.read(path)
+    assert list(back) == ["a.weight", "b.taps"]
+    assert back["b.taps"].dtype == torch.int64 and back["b.taps"].tolist() == [40, 44]
+    assert torch.equal(back["a.weight"], torch.from_numpy(written["a.weight"]))
+    with pytest.raises(FileExistsError):
+        weights.write(path, written)
+    with pytest.raises(ValueError, match="only float32 and int64"):
+        weights.write(tmp_path / "x", {"c": np.zeros(2, np.float64)})
+
+
+def test_a_written_file_is_the_header_then_each_array_in_order(tmp_path):
+    """The bytes as the first version wrote them, every array joined after the
+    header: the arrays now go to the file one at a time, as they come."""
+    import json
+
+    import numpy as np
+
+    written = {
+        "w": np.arange(12, dtype="<f4").reshape(3, 4).T,  # not contiguous: C order
+        "n": np.array([3, -1], "<i8"),
+        "e": np.zeros((0, 2), "<f4"),
+    }
+    path = tmp_path / "w.safetensors"
+    weights.write(path, written, {"step": "2"})
+    header, start, data = {"__metadata__": {"step": "2"}}, 0, b""
+    for name, array in written.items():
+        raw = np.ascontiguousarray(array).tobytes()
+        kind = "F32" if array.dtype == np.dtype("<f4") else "I64"
+        header[name] = {
+            "dtype": kind,
+            "shape": list(array.shape),
+            "data_offsets": [start, start + len(raw)],
+        }
+        data += raw
+        start += len(raw)
+    encoded = json.dumps(header).encode("utf-8")
+    encoded += b" " * (-len(encoded) % 8)
+    assert path.read_bytes() == struct.pack("<Q", len(encoded)) + encoded + data
+
+
 def test_only_the_tensors_asked_for_are_read(tmp_path):
     path = saved(
         tmp_path,

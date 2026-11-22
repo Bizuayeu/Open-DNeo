@@ -18,7 +18,6 @@ float64, as the probe's; the ridge is a share of the mean of the Gram's diagonal
 from __future__ import annotations
 
 import json
-import struct
 from collections import defaultdict
 from collections.abc import Sequence
 from pathlib import Path
@@ -137,22 +136,7 @@ def write(
         TAP_WEIGHTS: np.asarray(tap_weights, "<f4"),
         TAPS: np.asarray(taps, "<i8"),
     }
-    header: dict = {"__metadata__": {"taps": ",".join(map(str, taps))}}
-    data = []
-    start = 0
-    for name, array in tensors.items():
-        raw = array.tobytes()
-        header[name] = {
-            "dtype": {"f": "F32", "i": "I64"}[array.dtype.kind],
-            "shape": list(array.shape),
-            "data_offsets": [start, start + len(raw)],
-        }
-        data.append(raw)
-        start += len(raw)
-    encoded = json.dumps(header).encode("utf-8")
-    encoded += b" " * (-len(encoded) % 8)
-    with path.open("xb") as file:
-        file.write(struct.pack("<Q", len(encoded)) + encoded + b"".join(data))
+    weights.write(path, tensors, {"taps": ",".join(map(str, taps))})
 
 
 def read(path: Path) -> tuple[torch.Tensor, tuple[float, ...], tuple[int, ...]]:

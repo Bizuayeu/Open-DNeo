@@ -3,8 +3,8 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.6.1, 2026-11-22): a plan, a survey, an offline instrument that counts as serving does, and Stage 1's
-pilot recording, layer probe and step-0 bridge. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
+**Status (0.7.0, 2026-11-23): a plan, a survey, an offline instrument that counts as serving does, Stage 1's
+pilot recording, layer probe and step-0 bridge, and the command that trains a drafter. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
 published DFlash2 drafter proposes nearly what it proposes from reply rows of the same tokens
@@ -13,8 +13,9 @@ row hold more of the target's next tokens than the five DFlash2 reads
 ([receipts](receipts/2026-11-20-pilot/README.md)). With DNeo's entrance bridged by least squares onto DFlash2's
 layers, the drafter lands 0.853 to 0.962 of DFlash2's drafts a round before any training. A bridge from those five
 deeper taps led one from DFlash2's own in three classes of five, short of the rule set before the numbers, so
-Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). Each stage will add its tools, its
-numbers and what did not pay.
+Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). This release adds the training
+command alone: the numbers of its first runs are not in it yet. Each stage will add its tools, its numbers and
+what did not pay.
 
 [日本語](README.ja.md)
 
@@ -109,17 +110,20 @@ Sources, revisions and the full numbers are in [docs/survey.md](docs/survey.md).
 
 ```sh
 python -m pip install -e .                        # shapes, entrance and recording need numpy alone
-python -m pip install -e ".[torch]"               # greedy and score compute with torch
+python -m pip install -e ".[torch]"               # the other commands compute with torch
 open-dneo shapes incoai/GLM-5.3-Flash-DFlash2     # files, config and every tensor's shape
 open-dneo entrance incoai/GLM-5.3-Flash-DFlash2   # the diagonal share of its dense entrance
 open-dneo recording DIR                           # check what a server recorded with --record DIR
 open-dneo greedy DIR --target CHECKPOINT          # how much of a recording its target would have written
 open-dneo greedy DIR --target CHECKPOINT --save NEXT   # and its choice at every row, kept
+open-dneo greedy DIR --target CHECKPOINT --save NEXT --top K   # and its best K a row with their chances
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT   # a DFlash2 drafter's tokens a round on it
 open-dneo rows DIR --drafter DRAFTER --target CHECKPOINT --run RUN   # its drafts from prompt rows and reply rows
 open-dneo probe DIR --target CHECKPOINT --next NEXT   # which taps hold the target's next tokens
 open-dneo bridge DIR --drafter DRAFTER --out OUT   # DNeo's entrance fitted onto the drafter's layers
 open-dneo score DIR --drafter DRAFTER --target CHECKPOINT --bridge BRIDGE   # and scored with it
+open-dneo score DIR --drafter DRAFTER --target CHECKPOINT --bridge BRIDGE --dneo-mask --dneo-head 0   # in DNeo's form
+open-dneo train DIR... --next NEXT --drafter DRAFTER --target CHECKPOINT --out OUT --steps N   # a drafter trained
 ```
 
 `shapes` and `entrance` read a public Hugging Face repository by HTTP range requests, without credentials. `shapes`
@@ -139,7 +143,8 @@ needs its `config.json`, its index and the files that hold the embedding and the
 and its prompt tokens, how many are the token the target would write next. A reply decoded without sampling should
 be that all the way, which checks the head, its orientation and the tap before a drafter is scored against them.
 `--save NEXT` keeps the target's choice at every row of each stream counted, a little-endian int32 a row in
-`NEXT/<stream>.next`, for counts by part or role and for `probe`.
+`NEXT/<stream>.next`, for counts by part or role and for `probe`. With `--top K` it also keeps each row's best K
+tokens and their log probabilities in `NEXT/<stream>.best` and the next token's in `NEXT/<stream>.nextlp`.
 
 `score` takes every reply row as an anchor and runs the DFlash2 drafter on the block serving would build there, with
 the stream's earlier rows as its context. It cuts each chain of drafts where TensorFold's GLM lanes cut it and walks
@@ -190,9 +195,32 @@ with B in float32 (`--bridge-served` rounds it to 4 bits with the rest). With `-
 class, the walk in which the drafter makes every round, without copies. At step 0 the bridged drafter landed 0.853 to
 0.962 of DFlash2's drafts a round ([receipts/2026-11-21-g1](receipts/2026-11-21-g1/README.md)).
 
+`score --dneo-mask` scores with DNeo's mask, where a block row sees the context and its block's first row only,
+and `--dneo-head K` with DNeo's head carried over from DFlash2's, over the whole vocabulary (0) or the target
+head's best K; with K at DFlash2's own it drafts as DFlash2 does. With `--run`, the report also gives, class by
+class, how each position's drafts land once those before them have, every draft held; how chains land whole
+against the product of chances that serving's cut reads; the tokens and drafts verified a round at cuts from 0.2
+to 0.9; how often drafts land against their chances; and how often the target head's best k on the drafter's
+states hold the next token.
+
+`train` trains a drafter on recorded rows, from a DFlash2 drafter (with `--bridge`, `--dneo-mask` and
+`--dneo-head` as `score`'s) or from a trained one. Its labels are the target's own choices that `greedy --save`
+kept (`--next`): an anchor's block is taught the target's choices at the rows after it, as a cross-entropy,
+while those rows are the target's to write, an assistant's turn under GLM's chat template or a plain text. In
+borrowed text, a label past the first token the target would not have chosen follows text it would not have
+written, and `--off-path` gives such labels their weight, 0 by default; a draft's weight falls with its
+position by `--decay`. Each step takes a window of `--anchors` anchors in a stream of every part (`--parts`, a
+stream's name and its part a line), the parts' losses in their `--shares`, and an AdamW step at a rate warmed
+up over `--warmup` steps to `--peak` and down a cosine to `--end`, times a factor for each part of the drafter
+(`--rates`), its gradient clipped. One stream in `--held-every` by name is held out; every `--measure-every`
+steps the run measures the drafter on windows of those, over every part and part by part, and every
+`--keep-every` steps it keeps a `step-N` folder under `--out`. `score` reads such a folder with the entrance,
+mask and head it was trained with, and `--resume` goes on from it. `--device cuda` trains on a GPU. The defaults
+are placeholders, each with its source in `trainer.Settings`.
+
 The recording these commands need: tap k is the target's state after k layers, for GLM the mean of its four
 residual streams, as its DFlash2 drafter reads them, and the tap numbered as the layer count is the row after the
-final norm. `greedy` and `probe` read that last tap, 45 for GLM-5.3-Flash. `score` and `rows` read the tap one above each of
+final norm. `greedy` and `probe` read that last tap, 45 for GLM-5.3-Flash. `score`, `rows` and `train` read the tap one above each of
 the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above, or with `--bridge` the taps the
 bridge names. TensorFold's `--record` gives no rows for
 GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in

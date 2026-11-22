@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "open-dneo"
-version = "0.6.1"
+version = "0.7.0"
 description = "Tools for making DNeo drafter weights from rows a serving engine records"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,8 +14,9 @@ license-files = ["LICENSE", "NOTICE"]
 dependencies = ["numpy>=2.0"]
 
 [project.optional-dependencies]
-# What computes with torch: the drafters' forward passes (open_dneo.drafter) and what runs
-# them on real weights (weights, score, greedy). The rest of the package needs numpy alone.
+# What computes with torch: the drafters' forward passes (open_dneo.drafter), what runs
+# them on real weights (weights, score, greedy) and what trains them (train, trainer). The
+# rest of the package needs numpy alone.
 torch = ["torch>=2.13"]
 # Exact, the versions this release was checked with: a new formatter cannot turn main red.
 # torch is here so that the tests of those modules always run: they fail without it, and do

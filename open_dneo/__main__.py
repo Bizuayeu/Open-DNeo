@@ -1,5 +1,5 @@
 """The command line: `open-dneo` and one of shapes, entrance, recording, greedy, score, rows, probe,
-bridge."""
+bridge, train."""
 
 from __future__ import annotations
 
@@ -99,6 +99,18 @@ def parser() -> argparse.ArgumentParser:
         action="store_true",
         help="with --served, the bridge at 4 bits too (it stays float32 without)",
     )
+    scored.add_argument(
+        "--dneo-mask",
+        action="store_true",
+        help="DNeo's mask: a block row sees the context and its block's first row only",
+    )
+    scored.add_argument(
+        "--dneo-head",
+        type=int,
+        metavar="K",
+        help="DNeo's head carried from DFlash2's: 0 over the whole vocabulary, K over"
+        " the target head's best K",
+    )
     for command in (own, scored):
         command.add_argument(
             "folder", help="the --record folder, or any folder of streams"
@@ -111,6 +123,13 @@ def parser() -> argparse.ArgumentParser:
     own.add_argument(
         "--save", help="a folder to keep each stream's choices in, <stream>.next"
     )
+    own.add_argument(
+        "--top",
+        type=int,
+        default=0,
+        help="with --save, also each row's best TOP tokens and their log"
+        " probabilities (<stream>.best) and the next token's (<stream>.nextlp)",
+    )
     own.set_defaults(
         run=lambda a: _with_torch("greedy").report(
             Path(a.folder),
@@ -118,6 +137,7 @@ def parser() -> argparse.ArgumentParser:
             a.device,
             a.streams,
             Path(a.save) if a.save else None,
+            a.top,
         )
     )
     scored.set_defaults(
@@ -133,6 +153,8 @@ def parser() -> argparse.ArgumentParser:
             None if a.drafts_log is None else Path(a.drafts_log),
             None if a.bridge is None else Path(a.bridge),
             a.bridge_served,
+            a.dneo_mask,
+            a.dneo_head,
         )
     )
     paired = commands.add_parser(
@@ -261,7 +283,90 @@ def parser() -> argparse.ArgumentParser:
             tuple(int(t) for t in a.inputs.split(",")) if a.inputs else (),
         )
     )
+
+    taught = commands.add_parser(
+        "train", help="a drafter trained on recorded rows and the target's choices"
+    )
+    taught.add_argument(
+        "folders", nargs="+", help="--record folders, or any folders of streams"
+    )
+    taught.add_argument(
+        "--next", required=True, help="greedy --save's folder: each stream's choices"
+    )
+    taught.add_argument(
+        "--drafter",
+        required=True,
+        help="the drafter to start from: a DFlash2 folder, or a trained one",
+    )
+    taught.add_argument(
+        "--target", required=True, help="the target checkpoint's folder"
+    )
+    taught.add_argument("--out", required=True, help="where step-N folders are kept")
+    taught.add_argument("--steps", type=int, required=True)
+    taught.add_argument("--bridge", help="as score's: DNeo's entrance, bridged")
+    taught.add_argument("--dneo-mask", action="store_true", help="as score's")
+    taught.add_argument("--dneo-head", type=int, metavar="K", help="as score's")
+    taught.add_argument(
+        "--parts",
+        action="append",
+        help="a file of lines: stream name, a tab, its part (again for more)",
+    )
+    taught.add_argument(
+        "--shares", help="each part's share of a step, as part=1,part=2 (default: rows)"
+    )
+    taught.add_argument(
+        "--rates",
+        help="a factor of the rate for parts of the drafter, as layers=0.1,head=1"
+        " (default: 1 for every part)",
+    )
+    taught.add_argument("--held-every", type=int, default=10)
+    taught.add_argument(
+        "--resume",
+        action="store_true",
+        help="--drafter is a step-N folder of a run with the same settings: go on from it",
+    )
+    taught.add_argument("--device", default="cpu", help="where torch computes")
+    for name, kind in (
+        ("peak", float), ("end", float), ("warmup", int), ("decay", float),
+        ("off-path", float), ("anchors", int), ("span", int), ("clip", float),
+        ("held-anchors", int), ("held-streams", int), ("log-every", int),
+        ("measure-every", int), ("keep-every", int), ("seed", int),
+    ):  # fmt: skip
+        taught.add_argument(f"--{name}", type=kind, help="see trainer.Settings")
+    taught.set_defaults(run=_train)
     return top
+
+
+def _train(a: argparse.Namespace) -> tuple[list[str], bool]:
+    """`train`'s arguments to a run: the numbers not given keep Settings' defaults."""
+    trainer = _with_torch("trainer")
+    names = (
+        "peak", "end", "warmup", "decay", "off_path", "anchors", "span", "clip",
+        "held_anchors", "held_streams", "log_every", "measure_every", "keep_every",
+        "seed",
+    )  # fmt: skip
+    given = {name: getattr(a, name) for name in names if getattr(a, name) is not None}
+    settings = trainer.Settings(
+        steps=a.steps,
+        shares=trainer.shares(a.shares),
+        rates=trainer.rates(a.rates),
+        **given,
+    )
+    return trainer.command(
+        [Path(folder) for folder in a.folders],
+        Path(a.next),
+        Path(a.drafter),
+        Path(a.target),
+        Path(a.out),
+        settings,
+        parts=[Path(listing) for listing in a.parts or []],
+        bridge=None if a.bridge is None else Path(a.bridge),
+        dneo_mask=a.dneo_mask,
+        dneo_head=a.dneo_head,
+        held_every=a.held_every,
+        device=a.device,
+        resume=a.resume,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

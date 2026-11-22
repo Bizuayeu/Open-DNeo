@@ -25,6 +25,7 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 import torch
@@ -32,10 +33,14 @@ import torch
 from . import bridge as bridging
 from . import drafter, logged, recording, rounds, runs, served, weights
 
+# A trained drafter's folder names its form here (`train.save`).
+TRAINED = "train.json"
 # Anchors a pass unless told otherwise: at a vocabulary of 154,880 and 7 drafts an
 # anchor, the scores of 32 anchors are 139 MB of float32, and a head holds a few
 # tensors of that size at once.
 AT_ONCE = 32
+# The cuts a run's report sweeps, the default among them as it is written.
+CUTS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 
 @dataclass(frozen=True)
@@ -110,6 +115,11 @@ class Proposals:
     tokens: np.ndarray  # [anchors] i64: each anchor's token
     drafts: np.ndarray  # [anchors, block - 1] i64: for the positions after it
     chances: np.ndarray  # [anchors, block - 1] f64
+    # the target head's best k (the drafter's top_k) on the drafter's state:
+    # [anchors, block - 1] i8: at each draft, hold the token of the row it drafts,
+    # 1 or 0, or -1 where that row is past the stream's last
+    next_among: np.ndarray | None = None
+    draft_among: np.ndarray | None = None  # [anchors] bool: hold the first draft
 
 
 @torch.no_grad()
@@ -124,7 +134,10 @@ def proposals(
     anchors: np.ndarray | None = None,
     context_from: int | None = None,
 ) -> Proposals:
-    """The drafts and chances at every reply row of `stream`.
+    """The drafts and chances at every reply row of `stream`, at each draft
+    whether the target head's best k (the drafter's `top_k`, where it has one) on
+    its state hold the token of the row it drafts, and at the first whether they
+    hold the head's own draft.
 
     `at_once` anchors go through the model in one pass; the result does not
     depend on it. `anchors` takes the rows at those positions as the anchors in
@@ -167,10 +180,13 @@ def proposals(
     origin = first  # the stream's first row: where row 0 of its files lies
     if context_from is not None:
         first = max(first, context_from)
-    positions, tokens = pos[replies], np.asarray(stream.tok, np.int64)[replies]
+    every = np.asarray(stream.tok, np.int64)
+    positions, tokens = pos[replies], every[replies]
     like = model.norm.weight
     drafts = [np.empty((0, shape.block - 1), np.int64)]
     chances = [np.empty((0, shape.block - 1), np.float64)]
+    next_among = [np.empty((0, shape.block - 1), np.int8)]
+    draft_among = [np.empty(0, bool)]
     for start in range(0, len(replies), at_once):
         at = positions[start : start + at_once]
         # the rows any of these anchors' blocks can see: before the last anchor,
@@ -198,13 +214,31 @@ def proposals(
         # laid out anew: a head's own matrix is folded into one product only on
         # rows that lie in order (`Target.scores`)
         states = hidden[0, :, 1:].contiguous()
-        path, _, chance = model.head(
-            states, target.scores(states), ids[:, 0], temperature
-        )
+        scores = target.scores(states)
+        path, _, chance = model.head(states, scores, ids[:, 0], temperature)
         drafts.append(path.cpu().numpy().astype(np.int64))
         chances.append(chance.double().cpu().numpy())
+        if shape.top_k:
+            best = scores.topk(shape.top_k, -1).indices.cpu().numpy()
+            draft_among.append((best[:, 0] == drafts[-1][:, :1]).any(-1))
+            after = replies[start : start + at_once, None] + np.arange(1, shape.block)
+            nexts = np.where(
+                after < len(every), every[np.minimum(after, len(every) - 1)], -1
+            )
+            held = (best == nexts[..., None]).any(-1)
+            next_among.append(np.where(nexts >= 0, held, -1).astype(np.int8))
+    among = (
+        (np.concatenate(next_among), np.concatenate(draft_among))
+        if shape.top_k
+        else (None, None)
+    )
     return Proposals(
-        first, positions, tokens, np.concatenate(drafts), np.concatenate(chances)
+        first,
+        positions,
+        tokens,
+        np.concatenate(drafts),
+        np.concatenate(chances),
+        *among,
     )
 
 
@@ -224,6 +258,104 @@ def steps(
         return found.drafts[at].tolist(), found.chances[at].tolist()
 
     return rounds.walk(_reply(tokens, found), propose, cut)
+
+
+def calibration(
+    tokens: Sequence[int], found: Proposals, bins: int = 10
+) -> list[tuple[int, int]]:
+    """How often drafts land against their chances: (drafts, landed) a bin.
+
+    The cut reads a draft's chance as the chance it lands once the drafts before
+    it have (`rounds.held` multiplies them), so each anchor's drafts are counted
+    while the ones before them landed, up to the first that does not. The bins
+    are `bins` equal parts of [0, 1], a chance of 1 in the last. A draft past the
+    reply's end is not counted. `tokens` are the reply's, as `steps` takes them.
+    """
+    reply, counts = _reply(tokens, found), [[0, 0] for _ in range(bins)]
+    for at in range(len(found.tokens)):
+        for i, (draft, chance) in enumerate(zip(found.drafts[at], found.chances[at])):
+            if at + 1 + i >= len(reply):
+                break
+            landed, slot = (
+                int(draft) == reply[at + 1 + i],
+                min(int(chance * bins), bins - 1),
+            )
+            counts[slot][0] += 1
+            counts[slot][1] += landed
+            if not landed:
+                break
+    return [(drafts, landed) for drafts, landed in counts]
+
+
+class Position(NamedTuple):
+    """A draft position over a reply's anchors (`positions`)."""
+
+    reached: int  # anchors whose drafts before it landed, it inside the reply
+    landed: int  # of them, those whose draft there landed too: every draft to there
+    anchors: int  # anchors with it inside the reply
+    chance: float  # their chains' chances to there, summed: products of the chances
+
+
+def positions(tokens: Sequence[int], found: Proposals) -> list[Position]:
+    """How the drafts land at each position of a block, every draft held.
+
+    A draft is reached where the drafts before it in its block landed: a round
+    that held them all would verify it there. The cut is left out. Beside it is
+    the chance the cut reads, the product of the chances up to the position, of
+    every anchor's chain. A draft past the reply's end is not counted. `tokens`
+    are the reply's, as `steps` takes them.
+    """
+    inside, entire, product = _chains(tokens, found)
+    before = np.ones_like(entire)
+    before[:, 1:] = entire[:, :-1]
+    return [
+        Position(int(reached), int(landed), int(anchors), float(chance))
+        for reached, landed, anchors, chance in zip(
+            (before & inside).sum(0),
+            entire.sum(0),
+            inside.sum(0),
+            np.where(inside, product, 0.0).sum(0),
+            strict=True,
+        )
+    ]
+
+
+def chained(
+    tokens: Sequence[int], found: Proposals, bins: int = 10
+) -> list[tuple[int, int]]:
+    """How chains land whole against the product of their chances: (chains,
+    landed) a bin.
+
+    The product of a block's chances up to a draft is what the cut reads as the
+    chance that every draft to there lands. Each anchor's chain is counted at
+    every position inside the reply, a position after a miss as not landed. The
+    bins are `bins` equal parts of [0, 1], a product of 1 in the last. `tokens`
+    are the reply's, as `steps` takes them.
+    """
+    inside, entire, product = _chains(tokens, found)
+    slots = np.minimum((product[inside] * bins).astype(np.int64), bins - 1)
+    chains = np.bincount(slots, minlength=bins)
+    landed = np.bincount(slots, entire[inside].astype(np.float64), minlength=bins)
+    return [(int(n), int(round(hit))) for n, hit in zip(chains, landed, strict=True)]
+
+
+def whole(found: Proposals) -> Proposals:
+    """`found` with every chance 1: a chain that every cut holds whole."""
+    return dataclasses.replace(found, chances=np.ones_like(found.chances))
+
+
+def _chains(
+    tokens: Sequence[int], found: Proposals
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """For each anchor and draft [anchors, drafts]: inside the reply, every draft
+    to there landed, and the product of the chances to there."""
+    reply = np.asarray(_reply(tokens, found), np.int64)
+    count, width = found.drafts.shape
+    at = np.arange(count)[:, None] + 1 + np.arange(width)[None]
+    inside = at < len(reply)
+    truth = reply[np.minimum(at, len(reply) - 1)] if len(reply) else at
+    hit = inside & (found.drafts == truth)
+    return inside, np.cumprod(hit, axis=1).astype(bool), np.cumprod(found.chances, 1)
 
 
 def _reply(tokens: Sequence[int], found: Proposals) -> list[int]:
@@ -251,6 +383,7 @@ def lanes(
     *,
     prompt: Sequence[int] | None = None,
     reply: Sequence[int] | None = None,
+    cut: float = rounds.CUT,
 ) -> list[rounds.Round]:
     """The rounds serving takes over a stream's reply (`rounds.served`), copies included.
 
@@ -261,7 +394,8 @@ def lanes(
     last one a row may lack (`steps`). The drafts a round asks for are the
     drafter's block less its anchor; `max_new` is the request's limit of new
     tokens, where the replies were cut by it. `first_depth` is the drafts the
-    first round holds, which serving chooses from measured round times.
+    first round holds, which serving chooses from measured round times, and
+    `cut` the chain's (`rounds.held`).
     ValueError if `prompt` does not end in the stream's prompt rows or is not as
     long as its prompt, or `reply` is not the stream's (`steps`).
     """
@@ -288,7 +422,7 @@ def lanes(
     def propose(at: int) -> tuple[list[int], list[float]]:
         return found.drafts[at].tolist(), found.chances[at].tolist()
 
-    facts = rounds.Lanes(drafts=found.drafts.shape[1], first_depth=first_depth)
+    facts = rounds.Lanes(drafts=found.drafts.shape[1], first_depth=first_depth, cut=cut)
     return rounds.served(prompt, tokens, propose, facts, max_new)
 
 
@@ -304,6 +438,8 @@ def report(
     drafts_log: Path | None = None,
     bridge: Path | None = None,
     bridge_served: bool = False,
+    dneo_mask: bool = False,
+    dneo_head: int | None = None,
 ) -> tuple[list[str], bool]:
     """A DFlash2 drafter's rounds over the replies recorded under `root`.
 
@@ -322,7 +458,12 @@ def report(
     and walked as serving takes it over the request's whole prompt and reply, to the
     request's own limit of new tokens. A class's line sets serving's tokens a round
     beside the instrument's, as G0 compares them. Not sound if a request has no
-    stream or serving gave no rounds.
+    stream or serving gave no rounds. Each class also says how its drafts land by
+    position with every draft held (`positions`), how the product of their chances,
+    which the cut reads, stands against their landing whole (`chained`), and its
+    tokens and drafts verified a round with every draft held and at each of `CUTS`.
+    Those are the cut's alone: serving also prices a row, which can drop a draft
+    that a low cut keeps.
 
     With a run, `drafts_log` (a server's log with its DFlash2 rounds, `logged`)
     sets the drafts serving logged beside the instrument's at the same anchors, by
@@ -332,9 +473,21 @@ def report(
     weighted sum bridged into its layers (`bridge.entrance`), its layers, mask and
     head as they are: the bridge's step-0 score, G1. The bridge stays float32 as
     fitted, or with `bridge_served` and `as_served` goes to 4 bits too.
+
+    `dneo_mask` and `dneo_head` turn the drafter towards DNeo's form at step 0, one
+    part at a time: a block row sees the context and its block's first row only,
+    and the head is DNeo's carried from DFlash2's (`drafter.Folded.from_selector`),
+    over the whole vocabulary (0) or the target head's best `dneo_head`.
     """
     model, target, reading, lines, unread = loaded(
-        drafter_folder, checkpoint, device, as_served, bridge, bridge_served
+        drafter_folder,
+        checkpoint,
+        device,
+        as_served,
+        bridge,
+        bridge_served,
+        dneo_mask=dneo_mask,
+        dneo_head=dneo_head,
     )
     if drafts_log is not None and run is None:
         return lines + ["a drafts log is read beside a run file"], False
@@ -394,18 +547,53 @@ def loaded(
     as_served: bool,
     bridge_file: Path | None = None,
     bridge_served: bool = False,
+    *,
+    dneo_mask: bool = False,
+    dneo_head: int | None = None,
 ) -> tuple[drafter.Drafter, Target, Reading, list[str], list[str]]:
     """The drafter, the target and their reading, a report's first lines, and the
     names of the drafter's tensors that are not read.
 
     With `as_served` the drafter's linears and the head are rounded to 4 bits and
     the head's scores to bfloat16, as serving holds them by default. With
-    `bridge_file` the entrance is bridged (`report`).
+    `bridge_file` the entrance is bridged, and `dneo_mask` and `dneo_head` change
+    the mask and the head (`report`). ValueError if `dneo_head` is below 0 or past
+    the vocabulary.
     """
     config = json.loads((drafter_folder / "config.json").read_text(encoding="utf-8"))
+    if (drafter_folder / TRAINED).exists():
+        if bridge_file is not None or dneo_mask or dneo_head is not None:
+            raise ValueError(
+                "a trained drafter carries its own form: no bridge, DNeo mask or DNeo"
+                " head beside it"
+            )
+        model, reading, said = _trained(drafter_folder, config)
+        return _held(
+            model, reading, checkpoint, device, as_served, bridge_served, said, []
+        )
     model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
     unread = drafter.load(model, weights.read(drafter_folder / weights.WHOLE))
     reading = Reading.dflash2(config)
+    form = []
+    if dneo_mask:
+        reading = dataclasses.replace(reading, whole_block=False)
+        form.append(
+            "DNeo's mask (a block row sees the context and its block's first row)"
+        )
+    if dneo_head is not None:
+        if not 0 <= dneo_head <= model.shape.vocab:
+            raise ValueError(
+                f"dneo_head is {dneo_head}: 0 for the whole vocabulary, or the best k"
+                f" of {model.shape.vocab}"
+            )
+        carried = dataclasses.replace(model.shape, folded=model.shape.rank)
+        model.head = drafter.Folded.from_selector(model.head, carried, dneo_head)
+        over = (
+            f"the target head's best {dneo_head}"
+            if dneo_head
+            else "the whole vocabulary"
+        )
+        form.append(f"DNeo's head carried from DFlash2's, over {over}")
     entered = []
     if bridge_file is not None:
         matrix, tap_weights, taps = bridging.read(bridge_file)
@@ -413,11 +601,60 @@ def loaded(
         reading = dataclasses.replace(reading, taps=taps)
         held = "at 4 bits" if as_served and bridge_served else "as fitted (float32)"
         shown = ",".join(f"{w:.3f}" for w in tap_weights)
+        kept = (
+            "DFlash2's layers"
+            if form
+            else "DFlash2's layers, mask and head as they are"
+        )
         entered.append(
             f"the entrance: DNeo's weighted sum of taps {reading.taps}, weights {shown},"
-            f" bridged by {bridge_file.name} {held}; DFlash2's layers, mask and head"
-            " as they are"
+            f" bridged by {bridge_file.name} {held}; {kept}"
         )
+    if form:
+        entered.append("the form: " + "; ".join(form))
+    return _held(
+        model, reading, checkpoint, device, as_served, bridge_served, entered, unread
+    )
+
+
+def _trained(folder: Path, config: dict) -> tuple[drafter.Drafter, Reading, list[str]]:
+    """A drafter `train.save` kept, in its form, and the line that says so."""
+    form = json.loads((folder / TRAINED).read_text(encoding="utf-8"))
+    model = drafter.Drafter.dflash2(drafter.Shape.dflash2(config))
+    reading = Reading.dflash2(config)
+    said = [f"the drafter: trained to step {form['step']}"]
+    if form["taps"] is not None:
+        model.entrance = drafter.Bridged(model.shape)
+        reading = dataclasses.replace(reading, taps=tuple(form["taps"]))
+        said.append(
+            f"the entrance: DNeo's weighted sum of taps {reading.taps}, bridged"
+        )
+    if form["dneo_mask"]:
+        reading = dataclasses.replace(reading, whole_block=False)
+        said.append("DNeo's mask")
+    if form["dneo_head"] is not None:
+        carried = dataclasses.replace(model.shape, folded=model.shape.rank)
+        model.head = drafter.Folded(carried, form["dneo_head"])
+        best = form["dneo_head"]
+        said.append(
+            "DNeo's head over "
+            + (f"the target head's best {best}" if best else "the whole vocabulary")
+        )
+    model.load_state_dict(weights.read(folder / weights.WHOLE))
+    return model, reading, ["; ".join(said)]
+
+
+def _held(
+    model: drafter.Drafter,
+    reading: Reading,
+    checkpoint: Path,
+    device: str,
+    as_served: bool,
+    bridge_served: bool,
+    entered: list[str],
+    unread: list[str],
+) -> tuple[drafter.Drafter, Target, Reading, list[str], list[str]]:
+    """`loaded`'s end: the target read, the weights held as asked, the first lines."""
     read = Target.read(checkpoint)
     target = Target(read.embed.to(device), read.head.to(device))
     lines = ["weights as stored"]
@@ -487,32 +724,82 @@ def _by_run(
                 reply=request.reply,
             )
 
-        lane = walk()
-        own = steps(request.reply, proposed)
+        def swept(variant: Proposals, cut: float) -> list[rounds.Round]:
+            return lanes(
+                held,
+                variant,
+                request.max_tokens,
+                prompt=request.prompt,
+                reply=request.reply,
+                cut=cut,
+            )
+
         classes.setdefault(request.klass, []).append(
-            (request, lane, len(walk(1)), len(walk(proposed.drafts.shape[1])), own)
+            _Walked(
+                request,
+                walk(),
+                len(walk(1)),
+                len(walk(proposed.drafts.shape[1])),
+                steps(request.reply, proposed),
+                calibration(request.reply, proposed),
+                proposed,
+                positions(request.reply, proposed),
+                chained(request.reply, proposed),
+                [swept(whole(proposed), rounds.CUT)]
+                + [swept(proposed, cut) for cut in CUTS],
+            )
         )
     for klass, taken in classes.items():
         try:
-            tokens, said = runs.served([request for request, *_ in taken])
+            tokens, said = runs.served([each.request for each in taken])
         except ValueError as error:
             lines.append(f"{klass}: {error}")
             sound = False
             continue
-        mine = sum(r.tokens for _, lane, *_ in taken for r in lane)
-        walked = sum(len(lane) for _, lane, *_ in taken)
+        mine = sum(r.tokens for each in taken for r in each.lane)
+        walked = sum(len(each.lane) for each in taken)
         serving, instrument = tokens / said, mine / walked
         lines.append(
             f"{klass}: {len(taken)} replies; serving {tokens} tokens over {said} rounds,"
             f" {serving:.3f} a round; the instrument {mine} over {walked},"
             f" {instrument:.3f} a round; apart {abs(serving - instrument):.3f};"
             f" a first round of 1 draft or of every draft:"
-            f" {sum(x[2] for x in taken)} or {sum(x[3] for x in taken)} rounds"
+            f" {sum(each.least for each in taken)} or"
+            f" {sum(each.most for each in taken)} rounds"
         )
-        alone = [given for *_, own in taken for given in own]
+        alone = [given for each in taken for given in each.own]
         lines.append(
             f"{klass}: the drafter alone, {_alone(alone) if alone else '0 rounds'}"
         )
+        lines.append(f"{klass}: {_calibrated(_summed(e.calibration for e in taken))}")
+        placed = [
+            Position(*(sum(field) for field in zip(*column, strict=True)))
+            for column in zip(*(each.positions for each in taken), strict=True)
+        ]
+        lines.append(f"{klass}: {_positioned(placed)}")
+        lines.append(f"{klass}: {_chained(_summed(e.chained for e in taken), placed)}")
+        cuts = zip(*(each.swept for each in taken), strict=True)
+        lines.append(
+            f"{klass}: {_cuts([[r for lane in at for r in lane] for at in cuts])}"
+        )
+        if model.shape.top_k:
+            among = np.concatenate([each.proposed.next_among for each in taken])
+            heard = among[:, 0][among[:, 0] >= 0]
+            drew = np.concatenate([each.proposed.draft_among for each in taken])
+            lines.append(
+                f"{klass}: first drafts, the target head's best {model.shape.top_k}"
+                f" on the drafter's states: the next token among them at"
+                f" {_share(int(heard.sum()), len(heard), 'anchors')}, the head's draft at"
+                f" {_share(int(drew.sum()), len(drew))}"
+            )
+            by = ", ".join(
+                f"{j} {_share(int((column == 1).sum()), int((column >= 0).sum()))}"
+                for j, column in enumerate(among.T, 1)
+            )
+            lines.append(
+                f"{klass}: by position, the target head's best {model.shape.top_k} on"
+                f" the drafter's states hold the next token: {by}"
+            )
     if drafts_log is not None:
         lines.append(
             f"drafts log: {len(rounds_logged)} rounds, {astray} held by no request,"
@@ -533,6 +820,93 @@ def _by_run(
                 f" the first on; without a row: {got.unrecorded}"
             )
     return lines, sound
+
+
+class _Walked(NamedTuple):
+    """A run's request as `_by_run` walked it."""
+
+    request: runs.Request
+    lane: list[rounds.Round]  # as serving takes the rounds
+    least: int  # their count with a first round of 1 draft
+    most: int  # or of every draft
+    own: list[int]  # the tokens of each round, every round the drafter's
+    calibration: list[tuple[int, int]]
+    proposed: Proposals
+    positions: list[Position]
+    chained: list[tuple[int, int]]
+    swept: list[list[rounds.Round]]  # every draft held, then at each of `CUTS`
+
+
+def _summed(counts: object) -> list[tuple[int, int]]:
+    """Counts by bin, (n, landed) a bin, summed over requests."""
+    return [
+        (sum(n for n, _ in column), sum(hit for _, hit in column))
+        for column in zip(*counts, strict=True)
+    ]
+
+
+def _share(part: int, whole: int, noun: str = "") -> str:
+    """A of B (and a noun), then A's share of B where B is not 0."""
+    said = f"{part} of {whole}" + (f" {noun}" if noun else "")
+    return said + (f" ({part / whole:.3f})" if whole else "")
+
+
+def _calibrated(counts: list[tuple[int, int]]) -> str:
+    """`calibration` in words: each bin's drafts, and the share of them that landed."""
+    return "drafts by chance, each after the drafts before it landed: " + _binned(
+        counts
+    )
+
+
+def _binned(counts: list[tuple[int, int]]) -> str:
+    """Each bin of [0, 1]: its count, and the share of it that landed."""
+    bins = len(counts)
+    return ", ".join(
+        f"{i / bins:.1f}-{(i + 1) / bins:.1f} {n}"
+        + (f" landed {landed / n:.3f}" if n else "")
+        for i, (n, landed) in enumerate(counts)
+    )
+
+
+def _positioned(placed: list[Position]) -> str:
+    """`positions` in words: each position's drafts reached, and the share landed."""
+    return "by position, each draft after the ones before it landed: " + ", ".join(
+        f"{j} {p.reached}"
+        + (f" landed {p.landed / p.reached:.3f}" if p.reached else "")
+        for j, p in enumerate(placed, 1)
+    )
+
+
+def _chained(counts: list[tuple[int, int]], placed: list[Position]) -> str:
+    """`chained` in words, and by position every anchor's mean product against the
+    share of the anchors whose drafts to there all landed."""
+    means = ", ".join(
+        f"{j} {p.chance / p.anchors:.3f} {p.landed / p.anchors:.3f}"
+        if p.anchors
+        else f"{j} none"
+        for j, p in enumerate(placed, 1)
+    )
+    return (
+        "chains by the product of their chances, against every draft to there"
+        f" landed: {_binned(counts)}; by position, every anchor's product and its"
+        f" share landed whole: {means}"
+    )
+
+
+def _cuts(swept: list[list[rounds.Round]]) -> str:
+    """Tokens and drafts verified a round with every draft held, then at each cut."""
+    names = ["every draft", *(f"{cut:.1f}" for cut in CUTS)]
+    said = [
+        f"{name} {sum(r.tokens for r in taken) / len(taken):.3f}"
+        f" {sum(r.offered for r in taken) / len(taken):.2f}"
+        if taken
+        else f"{name} 0 rounds"
+        for name, taken in zip(names, swept, strict=True)
+    ]
+    return (
+        "by the cut alone, not serving's price of a row, as serving takes the rounds:"
+        " tokens and drafts verified a round, " + ", ".join(said)
+    )
 
 
 def _alone(given: list[int]) -> str:

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.7.0 (2026-11-23)
+
+Stage 0's last tool: the command that trains a drafter on recorded rows, and the instrument's view of what training
+changes. No weights yet, and this release holds no numbers from training.
+
+- `open-dneo train FOLDER... --next NEXT --drafter D --target T --out O --steps N` (`open_dneo.train`,
+  `open_dneo.trainer`, `open_dneo.feed`): a block is taught the target's own choices after its anchor, kept by
+  `greedy --save`, as a cross-entropy, on the rows the target writes (an assistant's turn under GLM's chat template,
+  or a plain text). A label past the first token the target would not have chosen has its own weight
+  (`--off-path`, 0 by default), and a draft's weight falls with its position (`--decay`). Each step takes a window of
+  anchors in a stream of every part (`--parts`, `--shares`) and an AdamW step at a rate warmed up and then down a
+  cosine (`--peak`, `--end`, `--warmup`), times a factor for each part of the drafter (`--rates`). Streams held out
+  by name are measured as the run goes, and `step-N` folders are kept that `score` reads and `--resume` goes on from.
+  The defaults are placeholders, each with its source in `trainer.Settings`.
+- `open-dneo score --dneo-mask --dneo-head K` (`drafter`): DNeo's mask, where a block row sees the context and its
+  block's first row only, and DNeo's head carried over from DFlash2's, over the whole vocabulary (0) or the target
+  head's best K. Carried over with K at DFlash2's own, it drafts as DFlash2 does. A trained drafter's folder carries
+  its own entrance, mask and head.
+- `open-dneo score --run`'s report, by class: how each position's drafts land once those before them have, every
+  draft held; how chains land whole against the product of chances that serving's cut reads; the tokens and drafts
+  verified a round at cuts from 0.2 to 0.9; how often drafts land against their chances; and how often the target head's best k on
+  the drafter's states hold the next token, at the first draft and by position.
+- `open-dneo greedy --save NEXT --top K`: also each row's best K tokens and their log probabilities
+  (`<stream>.best`) and the next token's (`<stream>.nextlp`), so a recording need not keep the final row to train
+  on.
+- `open_dneo.weights.write`: a trained drafter saved as a safetensors file that `score` reads, its header from the
+  arrays' shapes and the arrays written to the file one at a time, so a save copies one array at a time, not every
+  tensor at once.
+- `docs/plan.md`: Stage 0 is finished.
+
 ## 0.6.1 (2026-11-22)
 
 The README explains parallel drafting for newcomers. No new tools or numbers, and still no weights.

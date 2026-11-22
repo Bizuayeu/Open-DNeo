@@ -57,7 +57,10 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     monkeypatch.setattr(greedy, "report", lambda *a: seen.append(a) or (["g"], True))
     monkeypatch.setattr(score, "report", lambda *a: seen.append(a) or (["s"], False))
     assert cli.main(["greedy", "rec", "--target", "ck", "--streams"]) == 0
-    assert cli.main(["greedy", "rec", "--target", "ck", "--save", "nx"]) == 0
+    assert (
+        cli.main(["greedy", "rec", "--target", "ck", "--save", "nx", "--top", "16"])
+        == 0
+    )
     asked = ["score", "rec", "--drafter", "dr", "--target", "ck", "--device", "cuda"]
     assert cli.main(asked) == 1
     assert cli.main([*asked[:6], "--served", "--streams", "--max-tokens", "48"]) == 1
@@ -67,9 +70,10 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
     assert (
         cli.main([*asked[:6], "--served", "--bridge", "b.st", "--bridge-served"]) == 1
     )
+    assert cli.main([*asked[:6], "--dneo-mask", "--dneo-head", "16"]) == 1
     assert seen == [
-        (Path("rec"), Path("ck"), "cpu", True, None),
-        (Path("rec"), Path("ck"), "cpu", False, Path("nx")),
+        (Path("rec"), Path("ck"), "cpu", True, None, 0),
+        (Path("rec"), Path("ck"), "cpu", False, Path("nx"), 16),
         (
             Path("rec"),
             Path("dr"),
@@ -82,6 +86,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             None,
             False,
+            False,
+            None,
         ),
         (
             Path("rec"),
@@ -95,6 +101,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             None,
             False,
+            False,
+            None,
         ),
         (
             Path("rec"),
@@ -108,6 +116,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             None,
             False,
+            False,
+            None,
         ),
         (
             Path("rec"),
@@ -121,6 +131,8 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             Path("serve.log"),
             None,
             False,
+            False,
+            None,
         ),
         (
             Path("rec"),
@@ -134,9 +146,26 @@ def test_the_torch_commands_pass_their_folders_and_device(monkeypatch, capfdbina
             None,
             Path("b.st"),
             True,
+            False,
+            None,
+        ),
+        (
+            Path("rec"),
+            Path("dr"),
+            Path("ck"),
+            "cpu",
+            False,
+            False,
+            None,
+            None,
+            None,
+            None,
+            False,
+            True,
+            16,
         ),
     ]
-    assert capfdbinary.readouterr().out == b"g\ng\ns\ns\ns\ns\ns\n"
+    assert capfdbinary.readouterr().out == b"g\ng\ns\ns\ns\ns\ns\ns\n"
 
 
 def test_a_torch_command_says_what_it_needs_where_torch_is_not(monkeypatch):
@@ -238,3 +267,56 @@ def test_bridge_passes_its_folders_weights_and_split(monkeypatch, capfdbinary):
         ),
     ]
     assert capfdbinary.readouterr().out == b"b\nb\n"
+
+
+def test_train_passes_its_folders_numbers_and_form(monkeypatch, capfdbinary):
+    from open_dneo import trainer
+
+    seen = []
+
+    def command(*given, **named):
+        seen.append((given, named))
+        return ["== train finished"], True
+
+    monkeypatch.setattr(trainer, "command", command)
+    asked = [
+        "train", "rec", "rec2", "--next", "nx", "--drafter", "dr", "--target", "ck",
+        "--out", "o", "--steps", "50", "--bridge", "b.st", "--dneo-mask",
+        "--dneo-head", "0", "--parts", "p.tsv", "--shares", "code=1,chat=3",
+        "--peak", "1e-4", "--off-path", "0.25", "--held-every", "5",
+        "--held-streams", "4", "--rates", "layers=0.1",
+    ]  # fmt: skip
+    assert cli.main(asked) == 0
+    ((given, named),) = seen
+    folders, nexts, drafted, checkpoint, out, settings = given
+    assert folders == [Path("rec"), Path("rec2")] and nexts == Path("nx")
+    assert (drafted, checkpoint, out) == (Path("dr"), Path("ck"), Path("o"))
+    assert settings == trainer.Settings(
+        steps=50,
+        peak=1e-4,
+        off_path=0.25,
+        shares={"code": 1.0, "chat": 3.0},
+        held_streams=4,
+        rates={"layers": 0.1},
+    )
+    assert named == {
+        "parts": [Path("p.tsv")], "bridge": Path("b.st"), "dneo_mask": True,
+        "dneo_head": 0, "held_every": 5, "device": "cpu", "resume": False,
+    }  # fmt: skip
+    assert capfdbinary.readouterr().out == b"== train finished\n"
+    seen.clear()
+    assert cli.main([*asked[:13], "--resume"]) == 0
+    assert seen[0][1]["resume"] is True
+
+
+def test_shares_are_read_as_part_equals_number():
+    from open_dneo import trainer
+
+    assert trainer.shares(None) is None and trainer.shares("") is None
+    assert trainer.shares("code=0.3, chat=0.7") == {"code": 0.3, "chat": 0.7}
+    with pytest.raises(ValueError, match="a share is part=number, not 'code'"):
+        trainer.shares("code")
+    assert trainer.rates("layers=0.1,head=1") == {"layers": 0.1, "head": 1.0}
+    assert trainer.rates(None) is None
+    with pytest.raises(ValueError, match="a rate's factor is part=number, not 'x'"):
+        trainer.rates("x")

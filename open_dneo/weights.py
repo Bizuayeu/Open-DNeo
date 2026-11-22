@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Iterable
+import struct
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from . import hub
@@ -100,6 +102,40 @@ def read(path: Path, only: Iterable[str] | None = None) -> dict[str, torch.Tenso
             flat = torch.empty(0, dtype=TYPES[dtype])
         tensors[name] = flat.reshape(shape)
     return tensors
+
+
+def write(
+    path: Path,
+    tensors: Mapping[str, np.ndarray],
+    metadata: Mapping[str, str] | None = None,
+) -> None:
+    """A safetensors file of float32 and int64 arrays, in the order given.
+
+    The header is made from the arrays' shapes, then each array goes to the file
+    in turn: no copy of all the bytes at once beside the arrays (a trained
+    drafter's float32 copy is gigabytes, on a host whose GPU shares its memory).
+    FileExistsError where the file exists; ValueError for another type.
+    """
+    header: dict = {} if metadata is None else {"__metadata__": dict(metadata)}
+    kinds = {np.dtype("<f4"): "F32", np.dtype("<i8"): "I64"}
+    start = 0
+    for name, array in tensors.items():
+        if array.dtype not in kinds:
+            raise ValueError(
+                f"{name} is {array.dtype}: only float32 and int64 are written"
+            )
+        header[name] = {
+            "dtype": kinds[array.dtype],
+            "shape": list(array.shape),
+            "data_offsets": [start, start + array.nbytes],
+        }
+        start += array.nbytes
+    encoded = json.dumps(header).encode("utf-8")
+    encoded += b" " * (-len(encoded) % 8)
+    with Path(path).open("xb") as file:
+        file.write(struct.pack("<Q", len(encoded)) + encoded)
+        for array in tensors.values():
+            file.write(np.ascontiguousarray(array).reshape(-1).view(np.uint8).data)
 
 
 def holder(folder: Path, name: str) -> Path:

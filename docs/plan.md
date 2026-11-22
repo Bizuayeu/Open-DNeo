@@ -84,8 +84,8 @@ about 2,000 tokens ([receipts](../receipts/2026-11-19-recorder-check/README.md))
 about 8% longer.
 
 Stage 0's two exit conditions were met on 2026-11-19. The recorder's check is in the same receipts, and the tests
-hold the instrument's forwards to the outputs of the public definitions (`tests/test_drafter.py`). The stage is not
-finished: its training script is still to be written.
+hold the instrument's forwards to the outputs of the public definitions (`tests/test_drafter.py`). Its training
+script, the last of its tools, came in 0.7.0 (`open-dneo train`), which finished the stage.
 
 Stage 1 so far, on 2026-11-20: G0 passed, prompt rows were compared with reply rows, and a pilot of 609,309
 prompt-pass rows was recorded and probed ([receipts](../receipts/2026-11-20-pilot/README.md)). On 2026-11-20 and

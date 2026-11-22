@@ -6,6 +6,7 @@ checkpoints' configurations and tensor shapes.
 """
 
 import ast
+import dataclasses
 import json
 import pathlib
 
@@ -163,6 +164,103 @@ def test_the_selector_scores_a_position_from_the_token_it_chose_before():
     torch.testing.assert_close(chances, want)
     halved = head(hidden, scores, anchors, temperature=2.0)[2]
     torch.testing.assert_close(halved, (want.logit() / 2).sigmoid())
+
+
+TAUGHT = drafter.Shape(
+    hidden=8, heads=2, kv_heads=1, head_dim=4, ffn=8, layers=1, block=4, group=2,
+    eps=1e-5, theta=10000.0, vocab=11, rank=3, taps=2, top_k=4, folded=5,
+)  # fmt: skip
+
+
+@pytest.mark.parametrize("kind", ["Selector", "Folded"])
+def test_a_head_taught_its_own_drafts_scores_what_its_chain_scored(kind):
+    torch.manual_seed(0)
+    head = getattr(drafter, kind)(TAUGHT)
+    with torch.no_grad():
+        for parameter in head.parameters():
+            parameter.normal_()
+    n = TAUGHT.block - 1
+    hidden, scores = torch.randn(6, n, TAUGHT.hidden), torch.randn(6, n, TAUGHT.vocab)
+    anchors = torch.randint(TAUGHT.vocab, (6,))
+    with torch.no_grad():
+        path, chained, chances = head(hidden, scores, anchors)
+        before = torch.cat((anchors[:, None], path[:, :-1]), 1)
+        taught = head.teach(hidden, scores, before)
+    if kind == "Folded":  # every token of the vocabulary, as the chain's rows
+        assert taught.candidates is None
+        assert torch.equal(taught.values, chained)
+        best = taught.values.argmax(-1)
+    else:  # the best k of the target head's scores, as the chain's candidates
+        assert torch.equal(taught.candidates, chained)
+        picked = taught.values.argmax(-1, keepdim=True)
+        best = taught.candidates.gather(-1, picked)[..., 0]
+    assert torch.equal(best, path)
+    torch.testing.assert_close(taught.values.softmax(-1).amax(-1), chances)
+
+
+def test_a_taught_head_scores_each_position_from_the_token_given_before_it():
+    torch.manual_seed(1)
+    head = drafter.Folded(TAUGHT)
+    with torch.no_grad():
+        for parameter in head.parameters():
+            parameter.normal_()
+    n = TAUGHT.block - 1
+    hidden, scores = torch.randn(2, n, TAUGHT.hidden), torch.randn(2, n, TAUGHT.vocab)
+    given = torch.randint(TAUGHT.vocab, (2, n))
+    with torch.no_grad():
+        taught = head.teach(hidden, scores, given).values
+        state = head.projection(hidden)
+        for i in range(n):  # not the chain's own choice: the token given
+            torch.testing.assert_close(
+                taught[:, i], head.row(scores[:, i], state[:, i], given[:, i], i)
+            )
+
+
+def test_dneos_head_from_dflash2s_scores_dflash2s_candidates_as_dflash2_does():
+    shape = dataclasses.replace(TAUGHT, folded=TAUGHT.rank)
+    torch.manual_seed(2)
+    selector = drafter.Selector(shape)
+    with torch.no_grad():
+        for parameter in selector.parameters():
+            parameter.normal_()
+    folded = drafter.Folded.from_selector(selector, shape)
+    n = shape.block - 1
+    hidden, scores = torch.randn(4, n, shape.hidden), torch.randn(4, n, shape.vocab)
+    given = torch.randint(shape.vocab, (4, n))
+    with torch.no_grad():
+        theirs = selector.teach(hidden, scores, given)
+        ours = folded.teach(hidden, scores, given).values
+    # the same score on each of DFlash2's candidates; past them it scores the rest
+    torch.testing.assert_close(ours.gather(-1, theirs.candidates), theirs.values)
+    with pytest.raises(ValueError, match="latent width 5 is not the rank 3"):
+        drafter.Folded.from_selector(selector, TAUGHT)
+
+
+def test_dneos_head_on_the_best_k_drafts_as_dflash2s_head_it_came_from():
+    shape = dataclasses.replace(TAUGHT, folded=TAUGHT.rank)
+    torch.manual_seed(3)
+    selector = drafter.Selector(shape)
+    with torch.no_grad():
+        for parameter in selector.parameters():
+            parameter.normal_()
+    folded = drafter.Folded.from_selector(selector, shape, best=shape.top_k)
+    n = shape.block - 1
+    hidden, scores = torch.randn(5, n, shape.hidden), torch.randn(5, n, shape.vocab)
+    anchors = torch.randint(shape.vocab, (5,))
+    with torch.no_grad():
+        theirs = selector(hidden, scores, anchors)
+        ours = folded(hidden, scores, anchors)
+        given = torch.randint(shape.vocab, (5, n))
+        taught = folded.teach(hidden, scores, given)
+        wanted = selector.teach(hidden, scores, given)
+    # the drafts, the candidates and the chances among them
+    assert torch.equal(ours[0], theirs[0]) and torch.equal(ours[1], theirs[1])
+    torch.testing.assert_close(ours[2], theirs[2])
+    assert torch.equal(taught.candidates, wanted.candidates)
+    torch.testing.assert_close(taught.values, wanted.values)
+    # on the whole vocabulary it may draft past them
+    whole = drafter.Folded.from_selector(selector, shape)
+    assert whole.best == 0 and folded.best == shape.top_k
 
 
 def test_a_block_row_sees_the_context_before_its_anchor_and_its_own_block():

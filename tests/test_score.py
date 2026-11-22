@@ -7,6 +7,7 @@ at a time differs by 2e-15 at most (in float32 by 7e-6, random weights being wha
 they are), so the comparisons are tight.
 """
 
+import dataclasses
 import json
 import struct
 
@@ -88,6 +89,14 @@ def alone(model, target, reading, values, positions, anchor, token, temperature=
     `values` [s, taken taps, HIDDEN] are every row of the stream at `positions`,
     those at and after the anchor too: `drafter.visible` hides them.
     """
+    path, chances, _ = passed(
+        model, target, reading, values, positions, anchor, token, temperature
+    )
+    return path, chances
+
+
+def passed(model, target, reading, values, positions, anchor, token, temperature=1.0):
+    """`alone`, with the target head's scores [block - 1, vocab] the head read."""
     block = model.shape.block
     ids = torch.full((1, block), reading.mask_token)
     ids[0, 0] = token
@@ -112,7 +121,7 @@ def alone(model, target, reading, values, positions, anchor, token, temperature=
         if target.bf16_scores:
             scores = scores.to(torch.bfloat16).double()
         path, _, chances = model.head(states, scores, ids[:, 0], temperature)
-    return path[0].tolist(), chances[0].numpy()
+    return path[0].tolist(), chances[0].numpy(), scores[0]
 
 
 @pytest.mark.parametrize("kind", ["dflash2", "dneo"])
@@ -137,6 +146,41 @@ def test_proposals_are_each_reply_rows_block_passed_alone(kind, at_once, first, 
         )
         assert found.drafts[n].tolist() == path
         np.testing.assert_allclose(found.chances[n], chances, rtol=1e-9, atol=1e-12)
+
+
+@pytest.mark.parametrize("head", [None, 0])
+def test_drafts_say_whether_the_heads_best_k_hold_the_next_token(head):
+    model, target, reading = made("dflash2")
+    if head is not None:  # DNeo's head on the whole vocabulary: it may draft past k
+        carried = dataclasses.replace(model.shape, folded=model.shape.rank)
+        model.head = drafter.Folded.from_selector(model.head, carried, head).double()
+    values, tokens = drawn(12)
+    recorded = stream(values, tokens, first=0, prompt=4)
+    found = score.proposals(model, target, recorded, reading, at_once=3)
+    taken, positions, k = torch.from_numpy(values[:, [2, 0]]), torch.arange(12), 5
+    wanted_next, wanted_draft = [], []
+    for i in range(4, 12):
+        path, _, scores = passed(
+            model, target, reading, taken, positions, i, int(tokens[i])
+        )
+        best = [scores[j].topk(k).indices.tolist() for j in range(3)]
+        wanted_draft.append(path[0] in best[0])
+        # at each draft's position, the row it drafts: none past the stream's last
+        wanted_next.append(
+            [
+                -1 if i + 1 + j >= 12 else int(int(tokens[i + 1 + j]) in best[j])
+                for j in range(3)
+            ]
+        )
+    assert found.next_among.tolist() == wanted_next
+    assert wanted_next[-1] == [-1] * 3 and wanted_next[-2] == [
+        wanted_next[-2][0],
+        -1,
+        -1,
+    ]
+    assert {n for row in wanted_next for n in row} == {-1, 0, 1}
+    assert found.draft_among.tolist() == wanted_draft
+    assert all(wanted_draft) == (head is None)  # DFlash2's head drafts among them
 
 
 def test_the_chances_are_at_the_temperature_asked_for():
@@ -306,6 +350,75 @@ def test_steps_walk_a_reply_over_the_proposals():
     )
     assert score.steps([10, 11, 12, 13, 14, 15], later) == [2, 2, 1]
     assert score.steps([10, 11, 12, 13, 14, 15], later, cut=0.5) == [2, 3]
+
+
+def test_calibration_counts_each_draft_after_the_ones_before_it_landed():
+    held = found(
+        [[11, 12], [12, 0], [13, 14], [0, 0], [15, 0]],
+        [[0.95, 0.85], [0.75, 0.05], [0.35, 0.15], [0.55, 0.45], [0.99, 0.65]],
+    )
+    # after 10: 11 and 12 land; after 11: 12 lands, 0 misses (13), and its chance
+    # ends the count there; after 12: 13 and 14 land; after 13: 0 misses (14)
+    want = [(1, 0), (1, 1), (0, 0), (1, 1), (0, 0), (1, 0), (0, 0), (1, 1), (1, 1)]
+    assert score.calibration(held.tokens, held) == want + [(1, 1)]
+    # the reply's last token, without a row: the anchor before it drafts it
+    assert score.calibration([10, 11, 12, 13, 14, 15], held) == want + [(2, 2)]
+    # a chance of 1 is in the last bin, and fewer bins are wider
+    sure = found([[11, 12], [12, 0]], [[1.0, 0.7], [0.4, 0.2]])
+    assert score.calibration([10, 11, 12], sure, bins=2) == [(1, 1), (2, 2)]
+
+
+def landing() -> score.Proposals:
+    """Anchors 10 to 13: a miss in the middle of the first block, then a draft that
+    matches after it; the third block misses its second draft; the fourth is cut
+    by the reply's end."""
+    return found(
+        [[11, 0, 13], [12, 13, 0], [13, 99, 15], [14, 15, 16]],
+        [[0.9, 0.5, 0.5], [0.8, 0.5, 0.25], [0.5, 0.5, 0.5], [1.0, 0.5, 0.5]],
+    )
+
+
+def test_positions_count_each_draft_after_the_ones_before_it_landed():
+    held, reply = landing(), [10, 11, 12, 13, 14]
+    got = score.positions(reply, held)
+    # draft 1: every anchor's lands; draft 2: of the three inside the reply, only the
+    # second anchor's; draft 3: the second anchor's is reached and misses, and the
+    # first anchor's 13 matches but after a miss: it is not reached
+    assert [(p.reached, p.landed, p.anchors) for p in got] == [
+        (4, 4, 4),
+        (3, 1, 3),
+        (1, 0, 2),
+    ]
+    # each anchor's chain to there: the product of its chances, summed
+    assert [p.chance for p in got] == pytest.approx([3.2, 1.1, 0.325])
+    # without the reply's last token the last anchor has no draft inside it
+    assert score.positions(held.tokens, held)[0].anchors == 3
+
+
+def test_a_chain_is_counted_at_every_position_against_every_draft_to_there_landed():
+    held, reply = landing(), [10, 11, 12, 13, 14]
+    # (anchor, position): product, landed whole to there
+    # 10: 0.9 yes, 0.45 no, 0.225 no (its 13 matches, but after the miss)
+    # 11: 0.8 yes, 0.4 yes, 0.1 no; 12: 0.5 yes, 0.25 no; 13: 1.0 yes
+    assert score.chained(reply, held, bins=4) == [(2, 0), (3, 1), (1, 1), (3, 3)]
+    assert sum(n for n, _ in score.chained(reply, held)) == 9
+
+
+def test_lanes_hold_drafts_by_the_cut_they_are_given():
+    doubted = [[1.0, 0.5]] * 6
+    held = found([[11, 12], [12, 0], [13, 14], [0, 0], [15, 0], [0, 0]], doubted)
+    values, _ = drawn(3 + 6)
+    recorded = stream(values, [1, 2, 3, *held.tokens.tolist()], first=0, prompt=3)
+    # at the default cut the second draft is not verified
+    assert [r.offered for r in score.lanes(recorded, held)] == [1, 1, 1]
+    assert score.lanes(recorded, held, cut=rounds.CUT) == score.lanes(recorded, held)
+    assert [r.offered for r in score.lanes(recorded, held, cut=0.5)] == [2, 2, 2]
+    # every draft held: a chance of 1 for each
+    whole = score.whole(held)
+    assert score.lanes(recorded, whole) == score.lanes(recorded, held, cut=0.5)
+    assert held.chances.tolist() == doubted
+    # the sweep holds the default cut itself, written as it is
+    assert rounds.CUT in score.CUTS and list(score.CUTS) == sorted(score.CUTS)
 
 
 def test_steps_refuse_a_reply_that_is_not_the_streams():
@@ -746,7 +859,129 @@ def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
         said.append(
             f"{klass}: the drafter alone, {alone_said(score.steps(reply, found))}"
         )
+        said.append(f"{klass}: {calibrated_said(score.calibration(reply, found))}")
+        said.append(f"{klass}: {positions_said(score.positions(reply, found))}")
+        said.append(
+            f"{klass}: "
+            + chained_said(score.chained(reply, found), score.positions(reply, found))
+        )
+        swept = [
+            score.lanes(
+                held,
+                variant,
+                limit,
+                prompt=held.tok.astype(int)[:prompt].tolist(),
+                reply=reply,
+                cut=cut,
+            )
+            for variant, cut in [(score.whole(found), rounds.CUT)]
+            + [(found, cut) for cut in score.CUTS]
+        ]
+        said.append(f"{klass}: {cuts_said(swept)}")
+        heard = found.next_among[:, 0][found.next_among[:, 0] >= 0]
+        said.append(
+            f"{klass}: first drafts, the target head's best 5 on the drafter's states:"
+            f" the next token among them at {int(heard.sum())} of {len(heard)} anchors"
+            f" ({heard.mean():.3f}), the head's draft at {int(found.draft_among.sum())}"
+            f" of {len(found.draft_among)} ({found.draft_among.mean():.3f})"
+        )
+        by = [
+            (int((column == 1).sum()), int((column >= 0).sum()))
+            for column in found.next_among.T
+        ]
+        said.append(
+            f"{klass}: by position, the target head's best 5 on the drafter's states"
+            " hold the next token: "
+            + ", ".join(
+                f"{j} {held} of {n}" + (f" ({held / n:.3f})" if n else "")
+                for j, (held, n) in enumerate(by, 1)
+            )
+        )
     assert lines[1:] == ["run: 2 requests, 2 paired with a stream", *said]
+
+
+def calibrated_said(counts) -> str:
+    bins = len(counts)
+    return "drafts by chance, each after the drafts before it landed: " + ", ".join(
+        f"{i / bins:.1f}-{(i + 1) / bins:.1f} {n}"
+        + (f" landed {landed / n:.3f}" if n else "")
+        for i, (n, landed) in enumerate(counts)
+    )
+
+
+def positions_said(got) -> str:
+    return "by position, each draft after the ones before it landed: " + ", ".join(
+        f"{j} {p.reached}"
+        + (f" landed {p.landed / p.reached:.3f}" if p.reached else "")
+        for j, p in enumerate(got, 1)
+    )
+
+
+def chained_said(counts, got) -> str:
+    bins = len(counts)
+    return (
+        "chains by the product of their chances, against every draft to there"
+        " landed: "
+        + ", ".join(
+            f"{i / bins:.1f}-{(i + 1) / bins:.1f} {n}"
+            + (f" landed {landed / n:.3f}" if n else "")
+            for i, (n, landed) in enumerate(counts)
+        )
+        + "; by position, every anchor's product and its share landed whole: "
+        + ", ".join(
+            f"{j} {p.chance / p.anchors:.3f} {p.landed / p.anchors:.3f}"
+            if p.anchors
+            else f"{j} none"
+            for j, p in enumerate(got, 1)
+        )
+    )
+
+
+def cuts_said(swept) -> str:
+    names = ["every draft", *(f"{cut:.1f}" for cut in score.CUTS)]
+    return (
+        "by the cut alone, not serving's price of a row, as serving takes the rounds:"
+        " tokens and drafts verified a round, "
+        + ", ".join(
+            f"{name} {sum(r.tokens for r in lane) / len(lane):.3f}"
+            f" {sum(r.offered for r in lane) / len(lane):.2f}"
+            for name, lane in zip(names, swept, strict=True)
+        )
+    )
+
+
+def test_positions_chains_and_cuts_are_said():
+    got = [score.Position(4, 3, 5, 4.0), score.Position(0, 0, 0, 0.0)]
+    said = score._positioned(got)
+    assert said == (
+        "by position, each draft after the ones before it landed: 1 4 landed 0.750, 2 0"
+    )
+    assert said == positions_said(got)
+    chains = score._chained([(2, 1), (0, 0)], got)
+    assert chains == (
+        "chains by the product of their chances, against every draft to there landed:"
+        " 0.0-0.5 2 landed 0.500, 0.5-1.0 0; by position, every anchor's product and"
+        " its share landed whole: 1 0.800 0.600, 2 none"
+    )
+    assert chains == chained_said([(2, 1), (0, 0)], got)
+    head = rounds.Round("head", 2, 1, 2)
+    copy = rounds.Round("copy", 3, 3, 4)
+    swept = [[head, copy]] + [[head]] * len(score.CUTS)
+    assert score._cuts(swept) == cuts_said(swept)
+    assert score._cuts(swept).endswith(
+        "a round, every draft 3.000 2.50, 0.2 2.000 2.00, 0.3 2.000 2.00, 0.4 2.000"
+        " 2.00, 0.5 2.000 2.00, 0.6 2.000 2.00, 0.7 2.000 2.00, 0.8 2.000 2.00,"
+        " 0.9 2.000 2.00"
+    )
+
+
+def test_a_calibration_is_said_bin_by_bin():
+    said = score._calibrated([(4, 1), (0, 0)])
+    assert said == (
+        "drafts by chance, each after the drafts before it landed:"
+        " 0.0-0.5 4 landed 0.250, 0.5-1.0 0"
+    )
+    assert said == calibrated_said([(4, 1), (0, 0)])
 
 
 def test_report_on_a_run_walks_each_requests_whole_prompt_to_its_limit(tmp_path):
@@ -985,6 +1220,66 @@ def test_a_bridge_is_held_at_4_bits_only_when_asked(tmp_path, monkeypatch):
         bridge_served=True,
     )
     assert asked == [False, True] and " bridged by b.safetensors at 4 bits;" in lines[1]
+
+
+def test_dneos_head_on_dflash2s_best_k_scores_as_dflash2_does(tmp_path):
+    drafted, checkpoint_folder, (model, _, _) = folders(tmp_path)
+    values, tokens = drawn(16)
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=3)
+    plain, _ = score.report(root, drafted, checkpoint_folder)
+    k = model.shape.top_k
+    lines, sound = score.report(root, drafted, checkpoint_folder, dneo_head=k)
+    assert sound
+    assert (
+        lines
+        == plain[:1]
+        + [
+            f"the form: DNeo's head carried from DFlash2's, over the target head's best {k}"
+        ]
+        + plain[1:]
+    )
+
+
+def test_a_step_0_form_says_what_it_changed_beside_the_bridge(tmp_path):
+    rng = np.random.default_rng(14)
+    matrix = rng.standard_normal((HIDDEN, HIDDEN)).astype(np.float32)
+    drafted, checkpoint_folder, _ = folders(tmp_path)
+    values, tokens = drawn(16)
+    root = tmp_path / "rec"
+    on_disk(root, values, tokens, first=0, prompt=3)
+    path = tmp_path / "b.safetensors"
+    bridge.write(path, matrix, [0.25, 0.75], TAKEN)
+    model, _, reading, lines, _ = score.loaded(
+        drafted, checkpoint_folder, "cpu", False, path, dneo_mask=True, dneo_head=0
+    )
+    assert not reading.whole_block and reading.window == 5
+    assert isinstance(model.head, drafter.Folded) and model.head.best == 0
+    assert lines[1:3] == [
+        "the entrance: DNeo's weighted sum of taps (5, 9), weights 0.250,0.750,"
+        " bridged by b.safetensors as fitted (float32); DFlash2's layers",
+        "the form: DNeo's mask (a block row sees the context and its block's first"
+        " row); DNeo's head carried from DFlash2's, over the whole vocabulary",
+    ]
+    changed, sound = score.report(
+        root, drafted, checkpoint_folder, bridge=path, dneo_mask=True, dneo_head=0
+    )
+    assert sound and changed[:3] == lines[:3]
+    # random weights land no draft, so each part is seen in what it drafts
+    held = stream(values, tokens, first=0, prompt=3)
+
+    def drafted_by(**form):
+        model, target, reading, _, _ = score.loaded(
+            drafted, checkpoint_folder, "cpu", False, path, **form
+        )
+        return score.proposals(model, target, held, reading).drafts
+
+    plain = drafted_by()
+    assert not np.array_equal(drafted_by(dneo_mask=True), plain)
+    assert not np.array_equal(drafted_by(dneo_head=0), plain)
+    assert np.array_equal(drafted_by(dneo_head=model.shape.top_k), plain)
+    with pytest.raises(ValueError, match="dneo_head is -1: 0 for the whole vocab"):
+        score.loaded(drafted, checkpoint_folder, "cpu", False, dneo_head=-1)
 
 
 def test_a_bridge_of_other_taps_makes_the_reading_take_them(tmp_path):

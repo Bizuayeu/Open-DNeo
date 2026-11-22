@@ -14,11 +14,15 @@ three places:
 
 The arithmetic follows the public definitions named in NOTICE. DNeo's rejection
 memory and per-layer routers are not here.
+
+A head drafts in a chain, each position after the token it chose before. Training
+gives it those tokens instead (`teach`), and it scores every position at once.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import torch
 from torch import nn
@@ -262,6 +266,29 @@ class Bridged(nn.Module):
         return self.norm(self.fc(self.router(features)))
 
 
+class Taught(NamedTuple):
+    """A head's scores with the token before each position given (`teach`), or at
+    some positions of some blocks, one a row (`teach_rows`): the leading [m, n]
+    is then [k]."""
+
+    values: torch.Tensor  # [m, n, support]
+    candidates: torch.Tensor | None  # [m, n, support] the tokens scored; None: all
+
+
+def carrying(candidates: torch.Tensor, labels: torch.Tensor | None) -> torch.Tensor:
+    """`candidates` [m, n, k] with each label [m, n] among them.
+
+    Where a label (not -1) is not, it takes the last slot, the weakest candidate's,
+    so that training can teach a head the token it should have scored: a token
+    outside its candidates it can never draft.
+    """
+    if labels is None:
+        return candidates
+    absent = (labels >= 0) & ~(candidates == labels[..., None]).any(-1)
+    last = torch.where(absent, labels, candidates[..., -1])
+    return torch.cat((candidates[..., :-1], last[..., None]), -1)
+
+
 class Selector(nn.Module):
     """DFlash2's head: the target head's best k a position, re-scored in a chain."""
 
@@ -271,6 +298,60 @@ class Selector(nn.Module):
         self.predecessor = nn.Embedding(shape.vocab, shape.rank)
         self.successor = nn.Embedding(shape.vocab, shape.rank)
         self.projection = nn.Linear(shape.hidden, shape.rank, bias=False)
+
+    def _rescored(
+        self,
+        unary: torch.Tensor,
+        candidates: torch.Tensor,
+        state: torch.Tensor,
+        previous: torch.Tensor,
+    ) -> torch.Tensor:
+        """One position's candidates [m, k] re-scored after the tokens `previous` [m]."""
+        pair = torch.einsum(
+            "mr,mkr->mk",
+            self.predecessor(previous) * state,
+            self.successor(candidates),
+        )
+        return unary + pair
+
+    def teach(
+        self,
+        hidden: torch.Tensor,
+        scores: torch.Tensor,
+        previous: torch.Tensor,
+        labels: torch.Tensor | None = None,
+    ) -> Taught:
+        """Each position's candidates re-scored after the token `previous` [m, n]
+        gives before it, the block's own token first. With `labels` [m, n] each is
+        among them (`carrying`)."""
+        unary, candidates = scores.topk(self.top_k, -1)
+        if labels is not None:
+            candidates = carrying(candidates, labels)
+            unary = scores.gather(-1, candidates)
+        state = self.projection(hidden)
+        values = [
+            self._rescored(unary[:, i], candidates[:, i], state[:, i], previous[:, i])
+            for i in range(hidden.shape[1])
+        ]
+        return Taught(torch.stack(values, 1), candidates)
+
+    def teach_rows(
+        self,
+        hidden: torch.Tensor,
+        scores: torch.Tensor,
+        previous: torch.Tensor,
+        labels: torch.Tensor | None,
+        positions: torch.Tensor,
+    ) -> Taught:
+        """`teach` at k positions of some blocks, one a row: `hidden` [k, hidden],
+        `scores` [k, vocab], `previous`, `labels` and `positions` [k]. A position's
+        re-scoring does not depend on its place in the block."""
+        unary, candidates = scores.topk(self.top_k, -1)
+        if labels is not None:
+            candidates = carrying(candidates, labels)
+            unary = scores.gather(-1, candidates)
+        state = self.projection(hidden)
+        return Taught(self._rescored(unary, candidates, state, previous), candidates)
 
     def forward(
         self,
@@ -290,12 +371,9 @@ class Selector(nn.Module):
         state = self.projection(hidden)
         previous, path, chances = anchors, [], []
         for i in range(hidden.shape[1]):
-            pair = torch.einsum(
-                "mr,mkr->mk",
-                self.predecessor(previous) * state[:, i],
-                self.successor(candidates[:, i]),
+            rescored = self._rescored(
+                unary[:, i], candidates[:, i], state[:, i], previous
             )
-            rescored = unary[:, i] + pair
             best = rescored.argmax(-1, keepdim=True)
             chances.append((rescored / temperature).softmax(-1).gather(-1, best)[:, 0])
             previous = candidates[:, i].gather(-1, best)[:, 0]
@@ -304,10 +382,15 @@ class Selector(nn.Module):
 
 
 class Folded(nn.Module):
-    """DNeo's head: every score corrected from the previous token, in a chain."""
+    """DNeo's head: every score corrected from the previous token, in a chain.
 
-    def __init__(self, shape: Shape) -> None:
+    With `best` it drafts among the target head's best k a position only, as
+    DNeo's runtime can serve it, and a draft's chance is its share among them.
+    """
+
+    def __init__(self, shape: Shape, best: int = 0) -> None:
         super().__init__()
+        self.best = best  # 0: the whole vocabulary
         self.token = nn.Embedding(shape.vocab, shape.folded)
         self.predecessor = nn.Embedding(shape.vocab, shape.rank)
         self.projection = nn.Linear(shape.hidden, shape.rank, bias=False)
@@ -316,17 +399,85 @@ class Folded(nn.Module):
         self.dspark_scale = nn.Parameter(torch.ones(shape.block - 1))
         self.df2_scale = nn.Parameter(torch.zeros(shape.block - 1))
 
+    @classmethod
+    def from_selector(cls, selector: Selector, shape: Shape, best: int = 0) -> Folded:
+        """DFlash2's head as DNeo's, its re-scoring carried over whole.
+
+        With the latent projection as the identity, b = 1 and a = 0, DNeo's
+        correction is DFlash2's re-scoring read over the whole vocabulary: on
+        DFlash2's best k it gives DFlash2's scores, so with `best` as k it drafts
+        as DFlash2 does. The token table starts at zero. ValueError if the latent
+        width is not the rank.
+        """
+        if shape.folded != shape.rank:
+            raise ValueError(
+                f"the latent width {shape.folded} is not the rank {shape.rank}"
+            )
+        head = cls(shape, best).to(selector.projection.weight)
+        with torch.no_grad():
+            head.predecessor.weight.copy_(selector.predecessor.weight)
+            head.projection.weight.copy_(selector.projection.weight)
+            head.latent.weight.copy_(torch.eye(shape.rank))
+            head.out.weight.copy_(selector.successor.weight)
+            head.token.weight.zero_()
+            head.dspark_scale.zero_()
+            head.df2_scale.fill_(1.0)
+        return head
+
     def row(
         self,
         scores: torch.Tensor,
         state: torch.Tensor,
         previous: torch.Tensor,
-        position: int,
+        position: int | torch.Tensor,
     ) -> torch.Tensor:
-        """One position's corrected scores [m, vocab]."""
+        """One position's corrected scores [m, vocab], or with `position` [m] each
+        row's at its own position."""
         a, b = self.dspark_scale[position], self.df2_scale[position]
+        a, b = a[..., None], b[..., None]
         pair = self.latent(self.predecessor(previous) * state)
         return (a + b) * scores + self.out(a * self.token(previous) + b * pair)
+
+    def teach(
+        self,
+        hidden: torch.Tensor,
+        scores: torch.Tensor,
+        previous: torch.Tensor,
+        labels: torch.Tensor | None = None,
+    ) -> Taught:
+        """Each position's corrected scores after the token `previous` [m, n] gives
+        before it, the block's own token first: over the vocabulary, or with `best`
+        over the target head's best k, where `labels` [m, n] are each among them
+        (`carrying`)."""
+        state = self.projection(hidden)
+        rows = torch.stack(
+            [
+                self.row(scores[:, i], state[:, i], previous[:, i], i)
+                for i in range(hidden.shape[1])
+            ],
+            1,
+        )
+        if not self.best:
+            return Taught(rows, None)
+        candidates = carrying(scores.topk(self.best, -1).indices, labels)
+        return Taught(rows.gather(-1, candidates), candidates)
+
+    def teach_rows(
+        self,
+        hidden: torch.Tensor,
+        scores: torch.Tensor,
+        previous: torch.Tensor,
+        labels: torch.Tensor | None,
+        positions: torch.Tensor,
+    ) -> Taught:
+        """`teach` at k positions of some blocks, one a row: `hidden` [k, hidden],
+        `scores` [k, vocab], `previous`, `labels` and `positions` [k], each row
+        corrected at its own position's scales."""
+        rows = self.row(scores, self.projection(hidden), previous, positions)
+        if not self.best:
+            return Taught(rows, None)
+        candidates = carrying(scores.topk(self.best, -1).indices, labels)
+        return Taught(rows.gather(-1, candidates), candidates)
 
     def forward(
         self,
@@ -338,17 +489,27 @@ class Folded(nn.Module):
         """The greedy drafts [m, n], the corrected scores [m, n, vocab], chances.
 
         A draft's chance [m, n] is its share of the corrected scores over the
-        vocabulary at `temperature`.
+        vocabulary at `temperature`. With `best` the second is each position's
+        candidates [m, n, k], and the shares are among them.
         """
         state = self.projection(hidden)
+        candidates = scores.topk(self.best, -1).indices if self.best else None
         previous, path, rows, chances = anchors, [], [], []
         for i in range(hidden.shape[1]):
             rows.append(self.row(scores[:, i], state[:, i], previous, i))
-            share = (rows[-1] / temperature).softmax(-1).max(-1)
+            values = (
+                rows[-1]
+                if candidates is None
+                else rows[-1].gather(-1, candidates[:, i])
+            )
+            share = (values / temperature).softmax(-1).max(-1)
             previous = share.indices
+            if candidates is not None:
+                previous = candidates[:, i].gather(-1, previous[:, None])[:, 0]
             path.append(previous)
             chances.append(share.values)
-        return torch.stack(path, 1), torch.stack(rows, 1), torch.stack(chances, 1)
+        second = torch.stack(rows, 1) if candidates is None else candidates
+        return torch.stack(path, 1), second, torch.stack(chances, 1)
 
 
 def visible(
