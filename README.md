@@ -3,7 +3,7 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.7.0, 2026-11-23): a plan, a survey, an offline instrument that counts as serving does, Stage 1's
+**Status (0.8.0, 2026-11-24): a plan, a survey, an offline instrument that counts as serving does, Stage 1's
 pilot recording, layer probe and step-0 bridge, and the command that trains a drafter. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
@@ -13,9 +13,10 @@ row hold more of the target's next tokens than the five DFlash2 reads
 ([receipts](receipts/2026-11-20-pilot/README.md)). With DNeo's entrance bridged by least squares onto DFlash2's
 layers, the drafter lands 0.853 to 0.962 of DFlash2's drafts a round before any training. A bridge from those five
 deeper taps led one from DFlash2's own in three classes of five, short of the rule set before the numbers, so
-Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). This release adds the training
-command alone: the numbers of its first runs are not in it yet. Each stage will add its tools, its numbers and
-what did not pay.
+Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). This release adds serving's price
+of a row and G2's time of a round, measured in serving ([receipts](receipts/2026-11-23-round-time/README.md)), to the
+instrument: the numbers of training's first runs are not in it yet. Each stage will add its tools, its numbers
+and what did not pay.
 
 [日本語](README.ja.md)
 
@@ -200,8 +201,10 @@ and `--dneo-head K` with DNeo's head carried over from DFlash2's, over the whole
 head's best K; with K at DFlash2's own it drafts as DFlash2 does. With `--run`, the report also gives, class by
 class, how each position's drafts land once those before them have, every draft held; how chains land whole
 against the product of chances that serving's cut reads; the tokens and drafts verified a round at cuts from 0.2
-to 0.9; how often drafts land against their chances; and how often the target head's best k on the drafter's
-states hold the next token.
+to 0.9, by the cut alone and with serving's price of a row; how often drafts land against their chances; and how
+often the target head's best k on the drafter's states hold the next token. Over the whole run it gives the seconds
+of rounds at each cut at G2's time of a round, 41.87 ms and 5.87 ms a draft verified, and the cut with the least,
+as serving holds one cut a launch.
 
 `train` trains a drafter on recorded rows, from a DFlash2 drafter (with `--bridge`, `--dneo-mask` and
 `--dneo-head` as `score`'s) or from a trained one. Its labels are the target's own choices that `greedy --save`

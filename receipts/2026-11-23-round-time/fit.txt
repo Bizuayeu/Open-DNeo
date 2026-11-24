@@ -1,0 +1,18 @@
+c70a: 320 requests; counts
+c90: 320 requests; counts
+c50: 320 requests; counts
+c20: 320 requests; counts
+c70b: 320 requests; counts
+fit over 5 launches (c70a, c90, c50, c20, c70b): seconds = s_i + a rounds + b drafted, within each request
+  code: a 42.77 ms, b 6.02 ms a draft, within R^2 0.8914, 64 requests
+  agent: a 41.70 ms, b 5.86 ms a draft, within R^2 0.7986, 64 requests
+  chat: a 41.47 ms, b 5.96 ms a draft, within R^2 0.9867, 64 requests
+  ja: a 43.08 ms, b 5.62 ms a draft, within R^2 0.9743, 64 requests
+  prose: a 41.80 ms, b 5.97 ms a draft, within R^2 0.9913, 64 requests
+  all: a 41.87 ms, b 5.87 ms a draft, within R^2 0.9794, 320 requests
+  c70a: 2.391 drafts a round, 55.9 ms a round by the fit over all
+  c90: 1.883 drafts a round, 52.9 ms a round by the fit over all
+  c50: 3.033 drafts a round, 59.7 ms a round by the fit over all
+  c20: 4.766 drafts a round, 69.9 ms a round by the fit over all
+  c70b: 2.390 drafts a round, 55.9 ms a round by the fit over all
+drift c70b - c70a: median -27.0 ms a request over 320; rounds and drafted the same in 310

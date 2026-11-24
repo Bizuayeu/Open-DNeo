@@ -183,6 +183,158 @@ def test_the_copies_follow_the_lanes_settings():
     assert copies(rounds.served(SHORT, reply, wrong, Lanes(first_copy=1))) == []
 
 
+# The price the lanes put on a lone window: 76 ms at one row and 4.1 ms a row past it,
+# plus the overhead. A prefix is verified where it gives the most expected tokens a ms.
+
+
+@pytest.mark.parametrize(
+    "chances",
+    [
+        [1 / 16] + [1.0] * 6,  # the least first draft DFlash2's selector gives
+        [1.0] * 7,  # the dearest last row: every earlier draft sure to land
+        [0.95, 0.9, 0.95, 0.95, 0.95, 0.99, 0.99],
+        [0.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],  # every product at the cut
+    ],
+)
+def test_the_price_keeps_every_draft_the_default_cut_keeps(chances):
+    kept = rounds.held(chances)
+    assert rounds.priced(chances, kept, Lanes()) == kept
+    assert rounds.priced(chances, kept, Lanes(overhead=8.0)) == kept
+
+
+def test_under_a_low_cut_the_price_ends_the_chain():
+    chances = [0.9] + [0.3] * 6  # products 0.9, 0.27, 0.081, ...
+    kept = rounds.held(chances, cut=0.0)
+    assert kept == 7
+    # 1.9 / 80.1, then 2.17 / 84.2 the most, then 2.251 / 88.3 less
+    assert rounds.priced(chances, kept, Lanes(cut=0.0)) == 2
+    # a dearer round makes a row cheaper beside it: 2.251 / 188.3 beats 2.17 / 184.2
+    assert rounds.priced(chances, kept, Lanes(cut=0.0, overhead=100.0)) == 3
+    assert rounds.priced(chances, 1, Lanes(cut=0.0)) == 1  # never past the kept
+
+
+def test_a_first_draft_under_its_price_leaves_the_round_plain():
+    # 1.05 / 80.1 is less than 1 / 76: the pending token alone gives more a ms
+    assert rounds.priced([0.05, 1.0], 1, Lanes()) == 0
+    got = rounds.served([1, 2], [10, 11, 12], lambda at: ([11, 12], [0.05, 1.0]))
+    assert got == [Round("plain", 0, 0, 1), Round("plain", 0, 0, 1)]
+
+
+def test_without_a_price_the_cut_alone_decides():
+    unpriced = Lanes(price_one=None, cut=0.0)
+    assert rounds.priced([0.05, 1.0], 1, Lanes(price_one=None)) == 1
+    assert rounds.priced([0.9] + [0.3] * 6, 7, unpriced) == 7
+    reply = list(range(100, 120))
+    sure = rounds.served([1, 2, 3], reply, right(reply), unpriced)
+    assert sure == rounds.served([1, 2, 3], reply, right(reply))
+
+
+def test_the_price_sizes_the_rounds_serving_takes():
+    reply = list(range(100, 120))  # nothing repeats: no copy
+
+    def unsure(at):
+        return (reply[at + 1 :] + [-1] * 7)[:7], [0.9] + [0.3] * 6
+
+    got = rounds.served([1, 2, 3], reply, unsure, Lanes(cut=0.0))
+    assert [given.offered for given in got[:3]] == [2, 2, 2]
+
+
+# The lane core's allocator written out as it stands, a check on `priced`: `extendCosts`
+# and `allocateDrafts` (zig/src/core/lanes/allocate.zig at TensorFold e3fb56cb09) with
+# a head step's price and a free first draft, no other head cost and no least rows.
+
+
+def extend(costs, rows):
+    """extendCosts: the timed widths, between them a line, past the widest its ms a row."""
+    widths = sorted(costs)
+    out = {}
+    for total in range(1, rows + 1):
+        if total in costs:
+            out[total] = costs[total]
+        elif total > widths[-1]:
+            out[total] = costs[widths[-1]] * total / widths[-1]
+        else:
+            above = next(w for w in widths if w > total)
+            below = [w for w in widths if w < total]
+            if below:
+                b = below[-1]
+                out[total] = costs[b] + (costs[above] - costs[b]) * (total - b) / (
+                    above - b
+                )
+            else:
+                out[total] = costs[above]
+    return out
+
+
+def allocate(fixed, probs, costs, overhead, max_rows, step_ms=0.0, free_first=False):
+    """allocateDrafts: each stream's drafts, the likeliest node next, at the best rate."""
+    counts, best_counts = [0] * len(probs), [0] * len(probs)
+    rows = sum(fixed)
+    expected, drafts, firsts = float(rows), 0, 0
+
+    def rate(total, expected, over):
+        cost = costs.get(total) if costs else 1.0
+        if cost is None or cost + over <= 0:
+            return -1.0
+        return expected / (cost + over)
+
+    best = rate(rows, expected, overhead)
+    while rows < max_rows:
+        pick, pick_p = None, 0.0
+        for s, p in enumerate(probs):
+            if counts[s] < len(p) and (pick is None or p[counts[s]] > pick_p):
+                pick, pick_p = s, p[counts[s]]
+        if pick is None:
+            break
+        counts[pick] += 1
+        firsts += counts[pick] == 1
+        rows, drafts, expected = rows + 1, drafts + 1, expected + pick_p
+        steps = drafts - (firsts if free_first else 0)
+        now = rate(rows, expected, overhead + step_ms * steps)
+        if now > best or (not costs and step_ms == 0):
+            best, best_counts = now, list(counts)
+    return best_counts
+
+
+def test_the_written_out_allocator_gives_the_engines_own_test_numbers():
+    # the four tests of allocate.zig with these tables, each's counts as it asserts them
+    assert allocate([1, 1], [[0.9, 0.5], [0.8]], {}, 0.0, 8) == [2, 1]
+    costs = extend({1: 10.0, 8: 12.0}, 8)
+    twice = [[0.6, 0.3, 0.15], [0.6, 0.3, 0.15]]
+    assert allocate([1, 1], twice, costs, 2.0, 8) == [3, 3]
+    assert allocate([1, 1], twice, costs, 2.0, 8, 1.5, True) == [1, 1]
+    flat = extend({1: 10.0, 8: 10.0}, 8)
+    assert allocate([1], [[0.5]], flat, 0.0, 8, 100.0, True) == [1]
+    apart = [[0.9, 0.85, 0.8], [0.9, 0.2, 0.1]]
+    assert allocate([1, 1], apart, flat, 0.0, 8, 1.0, True) == [3, 1]
+    assert allocate([1, 1], apart, flat, 0.0, 8) == [3, 3]
+
+
+def test_priced_is_the_lane_cores_allocation_for_a_lone_stream():
+    import random
+
+    draw = random.Random(20261123)
+    for _ in range(2000):
+        lanes = Lanes(
+            cut=draw.choice([0.0, 0.1, 0.2, 0.3, 0.7]),
+            overhead=draw.choice([0.0, 8.0, 40.0]),
+            price_one=draw.choice([76.0, 52.0, 10.0]),
+            price_row=draw.choice([4.1, 6.8, 0.5]),
+        )
+        chances = [
+            draw.choice([draw.random(), draw.random() ** 4, 1.0]) for _ in range(7)
+        ]
+        kept = rounds.held(chances, lanes.cut)
+        # as the GLM lanes hand them on: the chained products, 0 from the first cut draft
+        chained, reach = [], 1.0
+        for j, chance in enumerate(chances):
+            reach = reach * chance if j < kept else 0.0
+            chained.append(reach)
+        table = {w: lanes.price_one + lanes.price_row * (w - 1) for w in range(1, 33)}
+        want = allocate([1], [chained], table, lanes.overhead, 32)[0]
+        assert rounds.priced(chances, kept, lanes) == want, (chances, lanes)
+
+
 def test_the_drafts_follow_the_lanes_settings():
     def unsure(at):
         return [-1] * 7, [0.9, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -196,3 +348,12 @@ def test_the_drafts_follow_the_lanes_settings():
     assert offered(Lanes(cut=0.4, drafts=3)) == [3, 3]
     assert offered(Lanes(cut=0.4, drafts=3), max_new=20) == [3, 3]
     assert offered(Lanes(cut=0.4, first_depth=2)) == [2, 7]
+
+
+def test_g2s_time_of_a_round_is_a_round_and_each_draft_verified():
+    # fitted to serving's seconds; the lanes' price that sizes a window is apart
+    assert (rounds.ROUND_MS, rounds.DRAFT_MS) == (41.87, 5.87)
+    assert (Lanes().price_one, Lanes().price_row) == (76.0, 4.1)
+    taken = [Round("head", 3, 2, 3), Round("copy", 2, 2, 3), Round("plain", 0, 0, 1)]
+    assert rounds.timed(taken) == pytest.approx(3 * 41.87 + 5 * 5.87)
+    assert rounds.timed([]) == 0

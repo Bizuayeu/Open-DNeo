@@ -819,7 +819,7 @@ def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
     monkeypatch.setattr(score, "lanes", walk)
     assert sound
     assert set(limits) == {12, 9}  # each request's own limit
-    said = []
+    said, timed = [], []
     for klass, held, prompt, last, given, limit in (
         ("chat", second, p1, 7, 4, 12),
         ("code", first, p0, 6, 5, 9),
@@ -865,19 +865,23 @@ def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
             f"{klass}: "
             + chained_said(score.chained(reply, found), score.positions(reply, found))
         )
-        swept = [
-            score.lanes(
-                held,
-                variant,
-                limit,
-                prompt=held.tok.astype(int)[:prompt].tolist(),
-                reply=reply,
-                cut=cut,
-            )
-            for variant, cut in [(score.whole(found), rounds.CUT)]
-            + [(found, cut) for cut in score.CUTS]
-        ]
-        said.append(f"{klass}: {cuts_said(swept)}")
+        for priced in (False, True):
+            swept = [
+                score.lanes(
+                    held,
+                    variant,
+                    limit,
+                    prompt=held.tok.astype(int)[:prompt].tolist(),
+                    reply=reply,
+                    cut=cut,
+                    priced=priced,
+                )
+                for variant, cut in [(score.whole(found), rounds.CUT)]
+                + [(found, cut) for cut in score.CUTS]
+            ]
+            said.append(f"{klass}: {cuts_said(swept, priced)}")
+            if priced:
+                timed.append(swept[1:])
         heard = found.next_among[:, 0][found.next_among[:, 0] >= 0]
         said.append(
             f"{klass}: first drafts, the target head's best 5 on the drafter's states:"
@@ -897,6 +901,8 @@ def test_report_on_a_run_sets_serving_beside_the_instrument_by_class(
                 for j, (held, n) in enumerate(by, 1)
             )
         )
+    merged = [[r for lanes in at for r in lanes] for at in zip(*timed, strict=True)]
+    said.append(timed_said(merged, 2))
     assert lines[1:] == ["run: 2 requests, 2 paired with a stream", *said]
 
 
@@ -937,11 +943,16 @@ def chained_said(counts, got) -> str:
     )
 
 
-def cuts_said(swept) -> str:
+def cuts_said(swept, priced=False) -> str:
     names = ["every draft", *(f"{cut:.1f}" for cut in score.CUTS)]
     return (
-        "by the cut alone, not serving's price of a row, as serving takes the rounds:"
-        " tokens and drafts verified a round, "
+        (
+            "by the cut and serving's price of a row, as serving takes the rounds:"
+            if priced
+            else "by the cut alone, not serving's price of a row, as serving takes"
+            " the rounds:"
+        )
+        + " tokens and drafts verified a round, "
         + ", ".join(
             f"{name} {sum(r.tokens for r in lane) / len(lane):.3f}"
             f" {sum(r.offered for r in lane) / len(lane):.2f}"
@@ -968,10 +979,45 @@ def test_positions_chains_and_cuts_are_said():
     copy = rounds.Round("copy", 3, 3, 4)
     swept = [[head, copy]] + [[head]] * len(score.CUTS)
     assert score._cuts(swept) == cuts_said(swept)
+    assert score._cuts(swept, priced=True) == cuts_said(swept, True)
+    assert score._cuts(swept, priced=True).startswith(
+        "by the cut and serving's price of a row, as serving takes the rounds:"
+    )
     assert score._cuts(swept).endswith(
         "a round, every draft 3.000 2.50, 0.2 2.000 2.00, 0.3 2.000 2.00, 0.4 2.000"
         " 2.00, 0.5 2.000 2.00, 0.6 2.000 2.00, 0.7 2.000 2.00, 0.8 2.000 2.00,"
         " 0.9 2.000 2.00"
+    )
+
+
+def timed_said(at_cuts, replies) -> str:
+    seconds = [rounds.timed(taken) / 1000 for taken in at_cuts]
+    least = seconds.index(min(seconds))
+    tokens = sum(r.tokens for r in at_cuts[least])
+    return (
+        "at G2's time of a round (41.87 ms and 5.87 ms a draft verified), by the cut"
+        " and serving's price of a row: seconds of rounds over"
+        f" {replies} replies, "
+        + ", ".join(
+            f"{cut:.1f} {s:.1f}" for cut, s in zip(score.CUTS, seconds, strict=True)
+        )
+        + f"; the least at {score.CUTS[least]:.1f},"
+        f" {tokens / seconds[least]:.1f} tokens a second"
+    )
+
+
+def test_g2s_time_is_said_at_each_cut_with_the_least():
+    plain, head = rounds.Round("plain", 0, 0, 1), rounds.Round("head", 2, 1, 2)
+    at = [[plain] * 1000 for _ in score.CUTS]  # 1000 tokens over 41.87 s
+    at[score.CUTS.index(0.5)] = [head] * 500  # the same over 500 x 53.61 ms
+    at[score.CUTS.index(0.6)] = [head] * 500  # a tie takes the lower cut
+    said = score._timed(at, 3)
+    assert said == timed_said(at, 3)
+    assert said == (
+        "at G2's time of a round (41.87 ms and 5.87 ms a draft verified), by the cut"
+        " and serving's price of a row: seconds of rounds over 3 replies, 0.2 41.9,"
+        " 0.3 41.9, 0.4 41.9, 0.5 26.8, 0.6 26.8, 0.7 41.9, 0.8 41.9, 0.9 41.9;"
+        " the least at 0.5, 37.3 tokens a second"
     )
 
 

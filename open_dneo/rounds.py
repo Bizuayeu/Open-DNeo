@@ -15,15 +15,21 @@ rounds a stream decoded alone takes, copies included, as the lane core plans the
 at TensorFold commit e3fb56cb09061a979cb02080601fc6f7870d3362 (`plan` and
 `copyProposal` in `zig/src/core/lanes/windows.zig`, the round in `engine.zig`).
 
-Two things of serving's are left out of `served`. The lanes also size a drafter's
-window by what its rows cost. For DFlash2 that drops no draft: a draft the cut
-keeps has a chance of 0.7 or more, a first draft one of 1/16 at the least, being
-the best share among 16 candidates, and a row's price asks for less than either.
-A head that takes its chances over the whole vocabulary, as DNeo's does, can fall
-under that price with its first draft: `served` is not such a drafter's count
-until the price is here. And the drafts held for a reply's first round are chosen
-from measured round times: `Lanes.first_depth` is what an engine that has
-measured nothing chooses.
+The lanes also size a drafter's window by what its rows cost (`priced`): of the
+drafts the cut keeps, they verify the prefix that gives the most expected tokens
+a ms, a draft's expected share being the product of the chances to it, at the
+price a lone window pays (`allocateDrafts` in `zig/src/core/lanes/allocate.zig`,
+called from `allocate` in `windows.zig`). For DFlash2 that drops no draft: a
+draft the cut keeps has a chance of 0.7 or more, a first draft one of 1/16 at
+the least, being the best share among 16 candidates, and a row's price asks for
+less than either (0.285 at the most, for a last row behind drafts sure to land).
+A head that takes its chances over the whole vocabulary, as DNeo's does, can
+fall under that price with its first draft, and a cut below about 0.29 lets the
+price end a chain.
+
+One thing of serving's is left out of `served`: the drafts held for a reply's
+first round are chosen from measured round times, and `Lanes.first_depth` is what
+an engine that has measured nothing chooses.
 """
 
 from __future__ import annotations
@@ -96,6 +102,36 @@ class Lanes:
     enter_match: int = 8  # the tokens that must match for a copy to take a round
     least_copy: int = 2  # a copy of fewer tokens is none
     min_match: int = 4  # the lookup's own least match
+    # A lone window's ms at w rows: price_one + price_row * (w - 1), GLM's table of
+    # shared rows for DFlash2 (`shared_costs` in `zig/src/families/glm/
+    # cuda_copy_policy.zig`), which the lane config lets override the window table
+    # at every width (`init` in `zig/src/core/lanes/config.zig`). None: the cut alone.
+    price_one: float | None = 76.0
+    price_row: float = 4.1
+    # What the lanes add to a window's price: 8 ms before any round is timed, then
+    # what the rounds take past the table, never under 0 (`overheadMs` and
+    # `observeOverhead` in `zig/src/core/lanes/depth.zig`): 0 where rounds take
+    # less than the table.
+    overhead: float = 0.0
+
+
+def priced(chances: Sequence[float], kept: int, lanes: Lanes = Lanes()) -> int:
+    """How many of the first `kept` drafts the lanes verify for their price.
+
+    The prefix with the most expected tokens a ms, the pending token counting one
+    and each draft the product of the chances to it; a tie keeps the shorter.
+    """
+    if lanes.price_one is None:
+        return kept
+    reach = expected = 1.0
+    best, count = expected / (lanes.price_one + lanes.overhead), 0
+    for rows, chance in enumerate(chances[:kept], 1):
+        reach *= chance
+        expected += reach
+        rate = expected / (lanes.price_one + lanes.price_row * rows + lanes.overhead)
+        if rate > best:
+            best, count = rate, rows
+    return count
 
 
 class Round(NamedTuple):
@@ -105,6 +141,21 @@ class Round(NamedTuple):
     offered: int  # drafts verified beside the pending token
     kept: int  # of them accepted
     tokens: int  # what the round gave: the accepted and one of the target's own
+
+
+# G2's time of a round (docs/plan.md): the ms one round of DFlash2 took as served and
+# the ms each draft verified added, fitted to the seconds of the same replies served
+# at cuts 0.9, 0.7 (twice), 0.5 and 0.2 on 2026-11-23, on two GB10s at tensor
+# parallel 2 (R² 0.979 within each request). A drafter whose own round costs more is
+# not measured and borrows it. Serving sizes a window by the lanes' price instead
+# (`Lanes.price_one`, `priced`).
+ROUND_MS = 41.87
+DRAFT_MS = 5.87
+
+
+def timed(taken: Sequence[Round]) -> float:
+    """The ms `taken` takes at G2's time of a round."""
+    return sum(ROUND_MS + DRAFT_MS * r.offered for r in taken)
 
 
 def served(
@@ -154,7 +205,7 @@ def served(
             width = min(lanes.max_copy, 2 * width + 1) if whole else lanes.first_copy
         else:
             drafts, chances = propose(at)
-            offered = held(chances[:depth], lanes.cut)
+            offered = priced(chances, held(chances[:depth], lanes.cut), lanes)
             kind, kept = HEAD if offered else PLAIN, landed(drafts[:offered], truth)
         step = min(kept + 1, len(reply) - 1 - at)
         rounds.append(Round(kind, offered, kept, step))

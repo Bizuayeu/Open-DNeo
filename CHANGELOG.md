@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.0 (2026-11-24)
+
+The instrument counts the rounds as serving prices them, and reads them at G2's time of a round, measured in
+serving. Still no weights, and this release holds no numbers from training.
+
+- `open_dneo.rounds.priced`: of the drafts the chain's cut keeps, the prefix TensorFold's GLM lanes verify for its
+  price, the one with the most expected tokens a ms at a lone window's price (76 ms and 4.1 ms a row for DFlash2,
+  `allocateDrafts`). `rounds.served` takes it, so a drafter read at its own cut is counted as serving would take its
+  rounds. At the default cut it drops no draft; a cut below about 0.29 lets the price end a chain, and a first draft
+  under 4.1/76 leaves the round plain. `open-dneo score --run` sweeps the cuts both ways, by the cut alone and with
+  the price.
+- `open_dneo.rounds.ROUND_MS`, `DRAFT_MS` and `timed`: G2's time of a round, 41.87 ms and 5.87 ms a draft verified,
+  fitted to serving's seconds for DFlash2's replies at five launches from cut 0.9 to 0.2, on two GB10s at tensor
+  parallel 2. Over the whole run, `open-dneo score --run` gives the seconds of rounds at each cut at that time, and
+  the cut with the least, as serving holds one cut a launch. A drafter whose round costs more borrows it, and MTP's
+  round is not timed this way yet.
+- `receipts/2026-11-23-round-time`: the fit of G2's time of a round, from five launches of G0's server on the open
+  half's 320 prompts at cuts 0.7, 0.9, 0.5, 0.2 and 0.7 again: each request's seconds, rounds and drafts verified
+  (no prompts or replies), the fit and its output, 41.87 ms and 5.87 ms over all with a within R² of 0.979.
+- Tests: the lane core's allocator (`extendCosts` and `allocateDrafts`) written out as it stands, held to the
+  engine's own test numbers, and `priced` held to it for a lone stream over 2,000 drawn chains, cuts, prices and
+  overheads.
+- `docs/plan.md`: where the instrument and serving part after the cut, and G2's time of a round. A cut set at launch
+  (`TF_GLM_DRAFT_CONFIDENCE`) leaves a block drafter's row prices on; the plan said it took them out, which holds
+  for MTP's `--mtp-confidence` only. Each drafter's cut is the one with the least time over the open half at that
+  time and serving's price, decided on 2026-11-24, after trained drafters' numbers on the open half had been seen
+  and before the sealed half was served or read; the plan had said the rule would come before those numbers.
+
 ## 0.7.0 (2026-11-23)
 
 Stage 0's last tool: the command that trains a drafter on recorded rows, and the instrument's view of what training

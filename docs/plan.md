@@ -109,13 +109,21 @@ gate is read per class, Japanese included.
 - **G2, winning offline.** Under serving's limits, on code or agent turns, arm A (or B) does both of these, and no
   class falls by more than 1%. (i) 5% or more tokens a round than DFlash2. (ii) 5% or more estimated speed than MTP,
   where estimated speed is tokens a round over the round's time from serving's logs, draft time included. MTP and a
-  block drafter pay different prices a round, so token counts alone don't compare them. The gap to arm C is reported
+  block drafter pay different prices a round, so token counts alone don't compare them. A block drafter's round is
+  taken as 41.87 ms and 5.87 ms a draft verified (`rounds.ROUND_MS`, `rounds.DRAFT_MS`), fitted on 2026-11-23 to
+  serving's seconds for DFlash2's replies on the open half at five launches from cut 0.9 to 0.2
+  ([receipts](../receipts/2026-11-23-round-time/README.md)); a drafter whose round costs more borrows it, and MTP's
+  round is not yet timed this way. The gap to arm C is reported
   too: if the control gains as much, the gain is not DNeo's. Each drafter, MTP included, is read at a cut of its own
   chain, chosen on the open half before G2 and then fixed (decided on 2026-11-21, before any trained drafter's
   number). At one cut for all, a drafter whose chances are honest keeps fewer drafts than one whose chances are
   high, so the cut would score how a drafter states its chances as well as how often its drafts land. A cut set at
-  launch also takes serving's row prices out of the window, so G0 is taken again at each chosen cut. How the cuts
-  are chosen is fixed before any trained drafter's number is seen.
+  launch (`TF_GLM_DRAFT_CONFIDENCE`) ends a block drafter's chain in GLM's lanes and leaves the row prices on, as
+  the instrument does (`rounds.priced`); MTP's `--mtp-confidence` is what takes them out. G0 was checked at the
+  default cut, so it is taken again at each chosen cut. A drafter's cut is the one whose rounds take the least
+  time over the open half at G2's time of a round and serving's price of a row (the line `score --run` reports),
+  the lower cut on a tie. This was decided on 2026-11-24, after trained drafters' numbers on the open half had been
+  seen; the sealed half had not been served or read. MTP's cut is chosen the same way once its round is timed.
 - **G3, winning served.** Decode tok/s is 5% or more above today's better drafter on code or agent turns, with no
   class more than 1% slower and replies unchanged.
 - **G4, memory.** 3% or more tokens a round over the first version. Otherwise it stays out.
@@ -190,14 +198,16 @@ Where the instrument is known to differ from serving, each a candidate for a fix
 - Candidates with equal scores at the sixteenth place may be chosen differently, and bfloat16 scores make such ties
   likelier.
 
-Serving also sizes a drafter's window by what its rows cost, and the instrument stops at the chain's cut. At the
-default cut that is no difference. A lone stream's round is priced at 76 ms and 4.1 ms a row more (`shared_costs` in
+Serving also sizes a drafter's window by what its rows cost, and the instrument does as it does after the chain's
+cut (`rounds.priced`): of the drafts the cut keeps, the prefix with the most expected tokens a ms. At the default
+cut that is no difference. A lone stream's round is priced at 76 ms and 4.1 ms a row more (`shared_costs` in
 TensorFold's `zig/src/families/glm/cuda_copy_policy.zig`), so a draft is kept where its chance is over 4.1/76 of the
 tokens expected without it, which are 1 for the first draft and 7 at most. A first draft's chance is 1/16 at the
 least, being the best share among 16 candidates, and a later draft that the cut kept has 0.7 or more. The first
 draft's margin is thin, 4.1/76 being 0.054 and 1/16 being 0.0625, so both prices were read again in the source of
 the server G0 ran on, TensorFold `e3fb56cb09`, whose prices the recorder's commit leaves as they are: they are the
-same.
+same. The price can end a chain where the cut is set below about 0.29, the most a last row behind drafts sure to
+land asks for, and a run's report sweeps the cuts both ways: by the cut alone and with the price.
 
 Checked on 2026-11-20: one launch records rows and serves DFlash2 drafts together, and its replies are the same
 tokens as those of launches that record nothing, so the rows G0 read came from the judged launch itself.

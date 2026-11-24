@@ -384,6 +384,7 @@ def lanes(
     prompt: Sequence[int] | None = None,
     reply: Sequence[int] | None = None,
     cut: float = rounds.CUT,
+    priced: bool = True,
 ) -> list[rounds.Round]:
     """The rounds serving takes over a stream's reply (`rounds.served`), copies included.
 
@@ -395,7 +396,8 @@ def lanes(
     drafter's block less its anchor; `max_new` is the request's limit of new
     tokens, where the replies were cut by it. `first_depth` is the drafts the
     first round holds, which serving chooses from measured round times, and
-    `cut` the chain's (`rounds.held`).
+    `cut` the chain's (`rounds.held`). `priced` takes serving's price of a row
+    (`rounds.priced`) after the cut, as serving does; without it the cut alone.
     ValueError if `prompt` does not end in the stream's prompt rows or is not as
     long as its prompt, or `reply` is not the stream's (`steps`).
     """
@@ -423,6 +425,8 @@ def lanes(
         return found.drafts[at].tolist(), found.chances[at].tolist()
 
     facts = rounds.Lanes(drafts=found.drafts.shape[1], first_depth=first_depth, cut=cut)
+    if not priced:
+        facts = dataclasses.replace(facts, price_one=None)
     return rounds.served(prompt, tokens, propose, facts, max_new)
 
 
@@ -724,7 +728,7 @@ def _by_run(
                 reply=request.reply,
             )
 
-        def swept(variant: Proposals, cut: float) -> list[rounds.Round]:
+        def swept(variant: Proposals, cut: float, priced: bool) -> list[rounds.Round]:
             return lanes(
                 held,
                 variant,
@@ -732,7 +736,13 @@ def _by_run(
                 prompt=request.prompt,
                 reply=request.reply,
                 cut=cut,
+                priced=priced,
             )
+
+        def sweep(priced: bool) -> list[list[rounds.Round]]:
+            return [swept(whole(proposed), rounds.CUT, priced)] + [
+                swept(proposed, cut, priced) for cut in CUTS
+            ]
 
         classes.setdefault(request.klass, []).append(
             _Walked(
@@ -745,10 +755,12 @@ def _by_run(
                 proposed,
                 positions(request.reply, proposed),
                 chained(request.reply, proposed),
-                [swept(whole(proposed), rounds.CUT)]
-                + [swept(proposed, cut) for cut in CUTS],
+                sweep(False),
+                sweep(True),
             )
         )
+    timed: list[list[list[rounds.Round]]] = []  # each class's rounds at each of `CUTS`
+    replies = 0
     for klass, taken in classes.items():
         try:
             tokens, said = runs.served([each.request for each in taken])
@@ -778,10 +790,15 @@ def _by_run(
         ]
         lines.append(f"{klass}: {_positioned(placed)}")
         lines.append(f"{klass}: {_chained(_summed(e.chained for e in taken), placed)}")
-        cuts = zip(*(each.swept for each in taken), strict=True)
-        lines.append(
-            f"{klass}: {_cuts([[r for lane in at for r in lane] for at in cuts])}"
-        )
+        for priced in (False, True):
+            cuts = zip(
+                *(each.priced if priced else each.swept for each in taken), strict=True
+            )
+            merged = [[r for lane in at for r in lane] for at in cuts]
+            lines.append(f"{klass}: " + _cuts(merged, priced))
+            if priced:
+                timed.append(merged[1:])
+                replies += len(taken)
         if model.shape.top_k:
             among = np.concatenate([each.proposed.next_among for each in taken])
             heard = among[:, 0][among[:, 0] >= 0]
@@ -800,6 +817,9 @@ def _by_run(
                 f"{klass}: by position, the target head's best {model.shape.top_k} on"
                 f" the drafter's states hold the next token: {by}"
             )
+    at_cuts = [[r for at in each for r in at] for each in zip(*timed, strict=True)]
+    if any(at_cuts):
+        lines.append(_timed(at_cuts, replies))
     if drafts_log is not None:
         lines.append(
             f"drafts log: {len(rounds_logged)} rounds, {astray} held by no request,"
@@ -835,6 +855,7 @@ class _Walked(NamedTuple):
     positions: list[Position]
     chained: list[tuple[int, int]]
     swept: list[list[rounds.Round]]  # every draft held, then at each of `CUTS`
+    priced: list[list[rounds.Round]]  # the same with serving's price of a row
 
 
 def _summed(counts: object) -> list[tuple[int, int]]:
@@ -893,7 +914,7 @@ def _chained(counts: list[tuple[int, int]], placed: list[Position]) -> str:
     )
 
 
-def _cuts(swept: list[list[rounds.Round]]) -> str:
+def _cuts(swept: list[list[rounds.Round]], priced: bool = False) -> str:
     """Tokens and drafts verified a round with every draft held, then at each cut."""
     names = ["every draft", *(f"{cut:.1f}" for cut in CUTS)]
     said = [
@@ -903,9 +924,33 @@ def _cuts(swept: list[list[rounds.Round]]) -> str:
         else f"{name} 0 rounds"
         for name, taken in zip(names, swept, strict=True)
     ]
+    way = (
+        "by the cut and serving's price of a row"
+        if priced
+        else "by the cut alone, not serving's price of a row"
+    )
     return (
-        "by the cut alone, not serving's price of a row, as serving takes the rounds:"
-        " tokens and drafts verified a round, " + ", ".join(said)
+        f"{way}, as serving takes the rounds: tokens and drafts verified a round, "
+        + ", ".join(said)
+    )
+
+
+def _timed(at_cuts: list[list[rounds.Round]], replies: int) -> str:
+    """Seconds of rounds at each of `CUTS` at G2's time of a round, and the least.
+
+    Serving holds one cut a launch, so the rounds of every class are summed. A tie
+    takes the lower cut.
+    """
+    seconds = [rounds.timed(taken) / 1000 for taken in at_cuts]
+    least = seconds.index(min(seconds))
+    tokens = sum(r.tokens for r in at_cuts[least])
+    return (
+        f"at G2's time of a round ({rounds.ROUND_MS} ms and {rounds.DRAFT_MS} ms a draft"
+        " verified), by the cut and serving's price of a row: seconds of rounds over"
+        f" {replies} replies, "
+        + ", ".join(f"{cut:.1f} {s:.1f}" for cut, s in zip(CUTS, seconds, strict=True))
+        + f"; the least at {CUTS[least]:.1f}, {tokens / seconds[least]:.1f} tokens a"
+        " second"
     )
 
 
