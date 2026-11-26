@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0 (2026-11-26)
+
+The last release: development has ended, on a negative result. Stage 2's drafters in DNeo's form did not reach
+DFlash2's predicted serving speed, and the work stopped by a line written before the last numbers. No weights are
+published, and the package does not change.
+
+- `receipts/2026-11-26-stage2`: the runs that decided it, on the evaluation set's open half. Drafters in three forms
+  (DNeo's, arm A; the bridge alone; DFlash2's, arm C), trained on prompt-pass rows of the target's own replies
+  and of a public set the same model wrote, for 200 to 2,400 steps, each read by G2's price: its predicted speed at
+  G2's time of a round and its fastest cut, as a share of DFlash2's. The best in DNeo's form reached 0.9922, the
+  bridge alone 0.9946, and arm C 1.009, from chances that match how its drafts land rather than from more drafts
+  landing. A uniform temperature on the chances lowered the price. Training to 2,400 steps raised the drafts landed
+  on held-out streams of the training text, and lowered the drafts landed and the price on the evaluation set. The
+  stop line, arm C's 1.009, was set before the 2,400-step runs. Their best reached 0.9832. The receipt holds every
+  drafter's score report, the price and calibration outputs, and `table.py`, which computes the price from the
+  reports.
+- `docs/plan.md`: where Stage 2 ended. G2 itself was not read: the sealed half was not served, scored or read and
+  stays sealed, and MTP's round is not timed. Stages 3 to 6 were not started. The rows were recorded from Stage 1's
+  checkpoint, not from the one of the MIT-licensed weights alone, and each cut was read by the cut alone, with the
+  price of a row bounded.
+- `README.md` and `README.ja.md`: the result at the top.
+- `NOTICE`: the public dataset some of Stage 2's drafters were trained on, of which this project includes no text.
+
 ## 0.8.0 (2026-11-24)
 
 The instrument counts the rounds as serving prices them, and reads them at G2's time of a round, measured in

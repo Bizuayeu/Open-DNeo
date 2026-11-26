@@ -1,0 +1,13 @@
+chat-h06: 1670 items, ids 1259353, cut 272
+chat-h08: 1685 items, ids 1302907, cut 363
+code-h06: 3369 items, ids 3529099, cut 3110
+code-h08: 3248 items, ids 3395734, cut 2980
+music-h06: 891 items, ids 693004, cut 279
+music-h08: 873 items, ids 687703, cut 256
+operator-h06: 17 items, ids 12339, cut 9
+operator-h08: 17 items, ids 10412, cut 5
+prose-h06: 2932 items, ids 2993346, cut 2392
+prose-h08: 2887 items, ids 2941840, cut 2341
+structured-h06: 2155 items, ids 2100052, cut 1585
+structured-h08: 2094 items, ids 2043355, cut 1546
+all: 21838 items, 20969144 ids, the longest 1122; excluded list 0; revision f912e86060f4b928ef2421d1398f3ea33c79c701; dropped {'chat-h06 a think tag': 40, 'chat-h08 a think tag': 81, 'code-h06 a special token or no reply': 1, 'code-h06 a think tag': 160, 'code-h08 a special token or no reply': 3, 'code-h08 a think tag': 214, 'music-h06 a think tag': 69, 'music-h08 a think tag': 79, 'operator-h06 a think tag': 4, 'operator-h08 a think tag': 3, 'prose-h06 a think tag': 179, 'prose-h08 a think tag': 234, 'structured-h06 a think tag': 165, 'structured-h08 a special token or no reply': 2, 'structured-h08 a think tag': 233}

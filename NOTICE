@@ -17,6 +17,11 @@ nvidia/Nemotron-Post-Training-Dataset-v1, nvidia/Nemotron-SWE-v1 and
 OpenAssistant/oasst2. This project includes none of their text, and none of the
 target's replies to oasst2's prompts.
 
+receipts/2026-11-26-stage2 names a further public dataset that drafters were
+trained on: Zek-Takai/glm53-flash-harvest, at
+f912e86060f4b928ef2421d1398f3ea33c79c701, MIT License. This project includes none
+of its text, and none of the target's replies to the prompts of the datasets above.
+
 open_dneo/drafter.py implements the two drafters' forward passes. It was written
 to compute what these public definitions compute, and its tests compare it with
 their outputs. No file of theirs is copied here:

@@ -3,8 +3,15 @@
 Tools and a procedure for making [DNeo](https://arxiv.org/abs/2611.21925) drafter weights for a target model on modest
 hardware, from rows a serving engine records. An independent, unofficial project.
 
-**Status (0.8.0, 2026-11-24): a plan, a survey, an offline instrument that counts as serving does, Stage 1's
-pilot recording, layer probe and step-0 bridge, and the command that trains a drafter. There are no weights yet, and nothing here shows that the approach works.** Gate G0 found the instrument's tokens a round within
+**Development ended with 0.9.0 (2026-11-26), on a negative result. No drafter trained here in DNeo's form reached
+DFlash2's predicted serving speed, and no weights are published.** On the evaluation set's open half, at G2's time
+of a round, the best in DNeo's form reached 0.9922 of DFlash2's speed, and one with DNeo's entrance alone 0.9946.
+DFlash2 itself, trained further, reached 1.009, by stating its chances better rather than landing more drafts. The
+work stopped by a line set before the last numbers; the sealed half was never served, scored or read
+([receipts](receipts/2026-11-26-stage2/README.md)).
+
+What it left: a plan, a survey, an offline instrument that counts as serving does, Stage 1's pilot recording, layer
+probe and step-0 bridge, and the command that trains a drafter. Gate G0 found the instrument's tokens a round within
 0.013 of serving's in every class of the evaluation set's open half
 ([receipts](receipts/2026-11-20-g0/README.md)). From the rows of a prompt pass, the cheap ones to record, the
 published DFlash2 drafter proposes nearly what it proposes from reply rows of the same tokens
@@ -13,10 +20,9 @@ row hold more of the target's next tokens than the five DFlash2 reads
 ([receipts](receipts/2026-11-20-pilot/README.md)). With DNeo's entrance bridged by least squares onto DFlash2's
 layers, the drafter lands 0.853 to 0.962 of DFlash2's drafts a round before any training. A bridge from those five
 deeper taps led one from DFlash2's own in three classes of five, short of the rule set before the numbers, so
-Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). This release adds serving's price
-of a row and G2's time of a round, measured in serving ([receipts](receipts/2026-11-23-round-time/README.md)), to the
-instrument: the numbers of training's first runs are not in it yet. Each stage will add its tools, its numbers
-and what did not pay.
+Stage 2 reads DFlash2's taps ([receipts](receipts/2026-11-21-g1/README.md)). The instrument also prices a row as
+serving does, and times a round at G2's time, measured in serving
+([receipts](receipts/2026-11-23-round-time/README.md)).
 
 [日本語](README.ja.md)
 
@@ -226,7 +232,7 @@ residual streams, as its DFlash2 drafter reads them, and the tap numbered as the
 final norm. `greedy` and `probe` read that last tap, 45 for GLM-5.3-Flash. `score`, `rows` and `train` read the tap one above each of
 the drafter's `target_layer_ids`: 6, 15, 25, 34 and 43 for the drafter above, or with `--bridge` the taps the
 bridge names. TensorFold's `--record` gives no rows for
-GLM yet, and the recorder for GLM that this project uses is not published yet. What its first check showed is in
+GLM yet, and the recorder for GLM that this project uses is not published. What its first check showed is in
 [receipts/2026-11-19-recorder-check](receipts/2026-11-19-recorder-check/README.md).
 
 ## Credits and licences

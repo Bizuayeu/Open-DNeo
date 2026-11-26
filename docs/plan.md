@@ -93,6 +93,18 @@ prompt-pass rows was recorded and probed ([receipts](../receipts/2026-11-20-pilo
 lands 0.853 to 0.962 of DFlash2's drafts a round, by class, so arm A leads, and by a rule written before the numbers
 Stage 2's entrance reads DFlash2's five taps. The disk and the training speed are still to be reported.
 
+Stage 2 ran from 2026-11-22 to 2026-11-26, and the project ended there. Drafters were trained in three forms
+(DNeo's, arm A; the bridge alone; DFlash2's, arm C) on prompt-pass rows of the target's own replies and of a public
+set the same model wrote. They were read on the open half by G2's price, the predicted speed at G2's time of a round
+and each drafter's fastest cut ([receipts](../receipts/2026-11-26-stage2/README.md)). G2 itself was not read. The
+sealed half was not served, scored or read, and stays sealed; a check of the public set's prompts against it printed
+counts only. MTP's round is not timed. A line written on 2026-11-25, before the last numbers, set the bar at arm C's
+price, 1.009 of DFlash2's. The best drafter in DNeo's form reached 0.9922 and the last runs 0.9832, so the work
+stopped. Development ended with 0.9.0: Stages 3 to 6 were not started, and no weights are published. Two things
+differ from what this plan says. The rows were recorded from Stage 1's checkpoint, not from the one of the
+MIT-licensed weights alone. Each cut was read by the cut alone, with the price of a row bounded, not by the sweep
+with that price.
+
 ## Gates
 
 Written before any number is seen. The evaluation prompts train nothing and are split from training by task. Every

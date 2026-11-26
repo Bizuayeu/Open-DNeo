@@ -1,0 +1,8 @@
+alone: DFlash2 takes cut 0.7, 1.0000 of DFlash2's (45.65 tokens a second); seconds 0.3 1591.2 0.4 1534.6 0.5 1498.9 0.6 1484.1 0.7 1481.6 0.8 1489.3 0.9 1516.1
+alone: own-3 takes cut 0.5, 0.9670 of DFlash2's (44.14 tokens a second); seconds 0.3 1550.4 0.4 1536.7 0.5 1532.3 0.6 1540.7 0.7 1554.8 0.8 1575.0 0.9 1610.0
+alone: own-c takes cut 0.3, 1.0091 of DFlash2's (46.06 tokens a second); seconds 0.3 1468.3 0.4 1476.0 0.5 1491.5 0.6 1508.5 0.7 1530.3 0.8 1555.9 0.9 1593.2
+alone: own-3 - own-c -0.0421
+priced: DFlash2 takes cut 0.7, 1.0000 of DFlash2's (45.65 tokens a second); seconds 0.2 1676.5 0.3 1591.2 0.4 1534.6 0.5 1498.9 0.6 1484.1 0.7 1481.6 0.8 1489.3 0.9 1516.1
+priced: own-3 takes cut 0.5, 0.9670 of DFlash2's (44.14 tokens a second); seconds 0.2 1580.0 0.3 1550.4 0.4 1536.9 0.5 1532.3 0.6 1540.2 0.7 1554.8 0.8 1575.0 0.9 1610.0
+priced: own-c takes cut 0.3, 1.0091 of DFlash2's (46.06 tokens a second); seconds 0.2 1468.8 0.3 1468.3 0.4 1476.0 0.5 1491.5 0.6 1508.5 0.7 1530.3 0.8 1555.9 0.9 1593.2
+priced: own-3 - own-c -0.0421

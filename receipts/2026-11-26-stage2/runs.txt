@@ -1,0 +1,74 @@
+== own-3
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 241 streams, 26 held, parts {'ja-glm': 0.3861509802941953, 'code-glm': 0.27861481254148496, 'chat-glm': 0.33523420716431973}
+step 200: loss 1.4890, rate 2e-05
+== own-3s1
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 241 streams, 26 held, parts {'ja-glm': 0.3861509802941953, 'code-glm': 0.27861481254148496, 'chat-glm': 0.33523420716431973}
+step 200: loss 1.2802, rate 2e-05
+== own-3b
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-glm': 0.2705756615538172, 'chat-glm': 0.456757739924119}
+step 200: loss 1.5842, rate 2e-05
+== own-3bs1
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-glm': 0.2705756615538172, 'chat-glm': 0.456757739924119}
+step 200: loss 1.5556, rate 2e-05
+== own-3m
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.3861509802941953, 'code-glm': 0.27861481254148496, 'chat-glm': 0.33523420716431973}
+step 200: loss 1.4716, rate 2e-05
+== hv-3
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.3861509802941953, 'chat-hv': 0.33523420716431973, 'code-hv': 0.27861481254148496}
+step 200: loss 1.3246, rate 2e-05
+== form0-own
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers, mask and head as they are
+run: 241 streams, 26 held, parts {'ja-glm': 0.3861509802941953, 'code-glm': 0.27861481254148496, 'chat-glm': 0.33523420716431973}
+step 200: loss 0.9473, rate 2e-05
+== form0-b
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers, mask and head as they are
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-glm': 0.2705756615538172, 'chat-glm': 0.456757739924119}
+step 200: loss 0.9480, rate 2e-05
+== own-c
+run: 241 streams, 26 held, parts {'ja-glm': 0.3861509802941953, 'code-glm': 0.27861481254148496, 'chat-glm': 0.33523420716431973}
+step 200: loss 1.2301, rate 2e-06
+== own-cb
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-glm': 0.2705756615538172, 'chat-glm': 0.456757739924119}
+step 200: loss 1.0316, rate 2e-06
+== own-3b8
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-glm': 0.2705756615538172, 'chat-glm': 0.456757739924119}
+step 800: loss 0.3151, rate 2e-05
+== hv2-1x
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 1080 streams, 119 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+step 800: loss 1.1297, rate 2e-05
+== hv2-4x
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 3507 streams, 389 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+step 800: loss 0.7371, rate 2e-05
+== hv2-16x
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 13216 streams, 1468 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+step 800: loss 1.4933, rate 2e-05
+== hv2-4x-long
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 3507 streams, 389 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+step 2400: loss 0.3389, rate 2e-05
+== hv2-16x-long
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 13216 streams, 1468 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+step 2400: loss 0.7607, rate 2e-05

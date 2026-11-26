@@ -1,0 +1,124 @@
+weights as stored
+the entrance: DNeo's weighted sum of taps (6, 15, 25, 34, 43), weights 0.200,0.200,0.200,0.200,0.200, bridged by bridge-uniform.safetensors as fitted (float32); DFlash2's layers
+the form: DNeo's mask (a block row sees the context and its block's first row); DNeo's head carried from DFlash2's, over the whole vocabulary
+run: 13216 streams, 1468 held, parts {'ja-glm': 0.2726665985220638, 'code-hv2': 0.2705756615538172, 'chat-hv2': 0.456757739924119}
+weights, held part 'ja-glm': 7640 anchors, 5.84 drafts an anchor on the path; by position 30.3%, 22.1%, 16.2%, 11.8%, 8.7%, 6.3%, 4.7%
+weights, held part 'code-hv2': 118037 anchors, 4.87 drafts an anchor on the path; by position 34.4%, 22.8%, 15.5%, 10.7%, 7.5%, 5.3%, 3.7%
+weights, held part 'chat-hv2': 249484 anchors, 3.73 drafts an anchor on the path; by position 40.8%, 24.2%, 14.7%, 9.0%, 5.6%, 3.5%, 2.2%
+step 0, held: 1468 streams, 375161 anchors; loss 2.9091; best token on the path by position 256823/375161, 162589/297788, 98213/242176, 58944/200252, 36483/168220, 24185/143157, 17721/123006; drafts landed on the path 1.388 an anchor
+step 0, held part 'ja-glm': 30 streams, 7640 anchors; loss 4.6571; best token on the path by position 4532/7640, 2504/7142, 1356/6715, 761/6309, 512/5937, 351/5581, 289/5259; drafts landed on the path 0.964 an anchor
+step 0, held part 'code-hv2': 462 streams, 118037 anchors; loss 2.4153; best token on the path by position 93225/118037, 68866/100497, 47068/87763, 30132/77838, 19103/69818, 12980/63151, 9673/57545; drafts landed on the path 1.939 an anchor
+step 0, held part 'chat-hv2': 976 streams, 249484 anchors; loss 3.1142; best token on the path by position 159066/249484, 91219/190149, 49789/147698, 28051/116105, 16868/92465, 10854/74425, 7759/60202; drafts landed on the path 1.140 an anchor
+step 10: loss 2.9158, rate 2e-05
+step 20: loss 2.2457, rate 4e-05
+step 30: loss 1.9144, rate 6e-05
+step 40: loss 2.4598, rate 8e-05
+step 50: loss 2.1394, rate 0.0001
+step 60: loss 2.5910, rate 0.00012
+step 70: loss 2.3666, rate 0.00014
+step 80: loss 2.2077, rate 0.00016
+step 90: loss 1.7052, rate 0.00018
+step 100: loss 2.1355, rate 0.0002
+step 100, held: 1468 streams, 375161 anchors; loss 1.9053; best token on the path by position 267206/375161, 182851/297788, 133765/242176, 102142/200252, 79634/168220, 62952/143157, 50556/123006; drafts landed on the path 1.832 an anchor
+step 100, held part 'ja-glm': 30 streams, 7640 anchors; loss 3.1511; best token on the path by position 4920/7640, 3093/7142, 2220/6715, 1750/6309, 1426/5937, 1260/5581, 1078/5259; drafts landed on the path 1.241 an anchor
+step 100, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.2931; best token on the path by position 96617/118037, 76026/100497, 61415/87763, 50410/77838, 41720/69818, 34394/63151, 28701/57545; drafts landed on the path 2.711 an anchor
+step 100, held part 'chat-hv2': 976 streams, 249484 anchors; loss 2.1976; best token on the path by position 165669/249484, 103732/190149, 70130/147698, 49982/116105, 36488/92465, 27298/74425, 20777/60202; drafts landed on the path 1.435 an anchor
+step 110: loss 1.9746, rate 0.0002
+step 120: loss 2.1901, rate 0.0002
+step 130: loss 2.2817, rate 0.000199
+step 140: loss 2.1616, rate 0.000199
+step 150: loss 2.1852, rate 0.000198
+step 160: loss 1.9307, rate 0.000197
+step 170: loss 1.8765, rate 0.000196
+step 180: loss 1.8023, rate 0.000194
+step 190: loss 2.1712, rate 0.000193
+step 200: loss 1.7371, rate 0.000191
+step 200, held: 1468 streams, 375161 anchors; loss 1.8653; best token on the path by position 267686/375161, 183720/297788, 134747/242176, 103314/200252, 81008/168220, 64178/143157, 51644/123006; drafts landed on the path 1.845 an anchor
+step 200, held part 'ja-glm': 30 streams, 7640 anchors; loss 3.0274; best token on the path by position 4977/7640, 3159/7142, 2337/6715, 1842/6309, 1546/5937, 1338/5581, 1154/5259; drafts landed on the path 1.280 an anchor
+step 200, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.2297; best token on the path by position 97070/118037, 76393/100497, 62064/87763, 51342/77838, 42659/69818, 35339/63151, 29548/57545; drafts landed on the path 2.752 an anchor
+step 200, held part 'chat-hv2': 976 streams, 249484 anchors; loss 2.1741; best token on the path by position 165639/249484, 104168/190149, 70346/147698, 50130/116105, 36803/92465, 27501/74425, 20942/60202; drafts landed on the path 1.433 an anchor
+step 210: loss 1.8931, rate 0.000189
+step 220: loss 2.1207, rate 0.000187
+step 230: loss 1.8476, rate 0.000185
+step 240: loss 2.1512, rate 0.000183
+step 250: loss 2.2356, rate 0.00018
+step 260: loss 2.1069, rate 0.000178
+step 270: loss 1.8199, rate 0.000175
+step 280: loss 1.5190, rate 0.000172
+step 290: loss 2.1581, rate 0.000169
+step 300: loss 2.4260, rate 0.000166
+step 300, held: 1468 streams, 375161 anchors; loss 1.8103; best token on the path by position 269410/375161, 186204/297788, 137654/242176, 106184/200252, 84063/168220, 67211/143157, 54689/123006; drafts landed on the path 1.893 an anchor
+step 300, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.9220; best token on the path by position 5029/7640, 3386/7142, 2461/6715, 2005/6309, 1678/5937, 1443/5581, 1210/5259; drafts landed on the path 1.349 an anchor
+step 300, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.1792; best token on the path by position 97559/118037, 77194/100497, 62986/87763, 52363/77838, 43864/69818, 36717/63151, 31030/57545; drafts landed on the path 2.813 an anchor
+step 300, held part 'chat-hv2': 976 streams, 249484 anchors; loss 2.1188; best token on the path by position 166822/249484, 105624/190149, 72207/147698, 51816/116105, 38521/92465, 29051/74425, 22449/60202; drafts landed on the path 1.475 an anchor
+step 310: loss 1.6106, rate 0.000163
+step 320: loss 1.6198, rate 0.00016
+step 330: loss 2.0404, rate 0.000156
+step 340: loss 1.5917, rate 0.000153
+step 350: loss 1.7844, rate 0.000149
+step 360: loss 1.6365, rate 0.000145
+step 370: loss 1.7474, rate 0.000142
+step 380: loss 1.5944, rate 0.000138
+step 390: loss 1.7747, rate 0.000134
+step 400: loss 1.8989, rate 0.00013
+step 400, held: 1468 streams, 375161 anchors; loss 1.7532; best token on the path by position 271045/375161, 187864/297788, 139070/242176, 107777/200252, 85510/168220, 68630/143157, 55850/123006; drafts landed on the path 1.924 an anchor
+step 400, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.8162; best token on the path by position 5101/7640, 3459/7142, 2583/6715, 2088/6309, 1744/5937, 1511/5581, 1294/5259; drafts landed on the path 1.388 an anchor
+step 400, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.1316; best token on the path by position 97944/118037, 77707/100497, 63509/87763, 53009/77838, 44633/69818, 37463/63151, 31776/57545; drafts landed on the path 2.863 an anchor
+step 400, held part 'chat-hv2': 976 streams, 249484 anchors; loss 2.0584; best token on the path by position 168000/249484, 106698/190149, 72978/147698, 52680/116105, 39133/92465, 29656/74425, 22780/60202; drafts landed on the path 1.495 an anchor
+step 410: loss 1.7102, rate 0.000126
+step 420: loss 1.8408, rate 0.000122
+step 430: loss 1.1078, rate 0.000118
+step 440: loss 1.5440, rate 0.000114
+step 450: loss 1.5652, rate 0.00011
+step 460: loss 1.2603, rate 0.000106
+step 470: loss 1.7494, rate 0.000102
+step 480: loss 1.9835, rate 9.79e-05
+step 490: loss 1.6951, rate 9.39e-05
+step 500: loss 1.3438, rate 9e-05
+step 500, held: 1468 streams, 375161 anchors; loss 1.7144; best token on the path by position 273116/375161, 189621/297788, 140912/242176, 109504/200252, 86904/168220, 70209/143157, 57175/123006; drafts landed on the path 1.952 an anchor
+step 500, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.8809; best token on the path by position 5155/7640, 3520/7142, 2591/6715, 2091/6309, 1764/5937, 1528/5581, 1324/5259; drafts landed on the path 1.418 an anchor
+step 500, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.0980; best token on the path by position 98302/118037, 78059/100497, 64033/87763, 53669/77838, 45068/69818, 38184/63151, 32340/57545; drafts landed on the path 2.888 an anchor
+step 500, held part 'chat-hv2': 976 streams, 249484 anchors; loss 2.0123; best token on the path by position 169659/249484, 108042/190149, 74288/147698, 53744/116105, 40072/92465, 30497/74425, 23511/60202; drafts landed on the path 1.525 an anchor
+step 510: loss 2.2575, rate 8.61e-05
+step 520: loss 1.2120, rate 8.22e-05
+step 530: loss 1.1062, rate 7.84e-05
+step 540: loss 1.5435, rate 7.46e-05
+step 550: loss 1.6035, rate 7.1e-05
+step 560: loss 2.0059, rate 6.74e-05
+step 570: loss 1.9640, rate 6.38e-05
+step 580: loss 1.5637, rate 6.04e-05
+step 590: loss 1.4733, rate 5.71e-05
+step 600: loss 1.8790, rate 5.39e-05
+step 600, held: 1468 streams, 375161 anchors; loss 1.6755; best token on the path by position 274379/375161, 191344/297788, 142567/242176, 110903/200252, 88339/168220, 71553/143157, 58685/123006; drafts landed on the path 1.977 an anchor
+step 600, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.7909; best token on the path by position 5159/7640, 3574/7142, 2670/6715, 2166/6309, 1801/5937, 1611/5581, 1361/5259; drafts landed on the path 1.432 an anchor
+step 600, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.0657; best token on the path by position 98629/118037, 78533/100497, 64629/87763, 54216/77838, 45741/69818, 38758/63151, 33078/57545; drafts landed on the path 2.924 an anchor
+step 600, held part 'chat-hv2': 976 streams, 249484 anchors; loss 1.9718; best token on the path by position 170591/249484, 109237/190149, 75268/147698, 54521/116105, 40797/92465, 31184/74425, 24246/60202; drafts landed on the path 1.545 an anchor
+step 610: loss 1.9478, rate 5.08e-05
+step 620: loss 1.6319, rate 4.78e-05
+step 630: loss 1.4098, rate 4.49e-05
+step 640: loss 1.7549, rate 4.22e-05
+step 650: loss 1.2548, rate 3.96e-05
+step 660: loss 0.9769, rate 3.72e-05
+step 670: loss 1.7136, rate 3.49e-05
+step 680: loss 1.5403, rate 3.27e-05
+step 690: loss 1.9274, rate 3.07e-05
+step 700: loss 1.2390, rate 2.89e-05
+step 700, held: 1468 streams, 375161 anchors; loss 1.6551; best token on the path by position 275252/375161, 192034/297788, 143182/242176, 111591/200252, 89007/168220, 72064/143157, 59141/123006; drafts landed on the path 1.989 an anchor
+step 700, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.8363; best token on the path by position 5181/7640, 3560/7142, 2636/6715, 2152/6309, 1786/5937, 1570/5581, 1357/5259; drafts landed on the path 1.436 an anchor
+step 700, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.0474; best token on the path by position 98804/118037, 78687/100497, 64803/87763, 54565/77838, 46023/69818, 39005/63151, 33346/57545; drafts landed on the path 2.934 an anchor
+step 700, held part 'chat-hv2': 976 streams, 249484 anchors; loss 1.9475; best token on the path by position 171267/249484, 109787/190149, 75743/147698, 54874/116105, 41198/92465, 31489/74425, 24438/60202; drafts landed on the path 1.559 an anchor
+step 710: loss 1.2014, rate 2.72e-05
+step 720: loss 1.9294, rate 2.57e-05
+step 730: loss 1.4426, rate 2.44e-05
+step 740: loss 1.6994, rate 2.32e-05
+step 750: loss 1.2031, rate 2.23e-05
+step 760: loss 1.7493, rate 2.14e-05
+step 770: loss 1.7003, rate 2.08e-05
+step 780: loss 1.8369, rate 2.04e-05
+step 790: loss 1.1002, rate 2.01e-05
+step 800: loss 1.4933, rate 2e-05
+step 800, held: 1468 streams, 375161 anchors; loss 1.6437; best token on the path by position 275940/375161, 192625/297788, 143936/242176, 112106/200252, 89537/168220, 72564/143157, 59707/123006; drafts landed on the path 2.001 an anchor
+step 800, held part 'ja-glm': 30 streams, 7640 anchors; loss 2.8461; best token on the path by position 5209/7640, 3587/7142, 2672/6715, 2140/6309, 1800/5937, 1592/5581, 1374/5259; drafts landed on the path 1.441 an anchor
+step 800, held part 'code-hv2': 462 streams, 118037 anchors; loss 1.0371; best token on the path by position 98969/118037, 78883/100497, 65111/87763, 54712/77838, 46275/69818, 39331/63151, 33630/57545; drafts landed on the path 2.953 an anchor
+step 800, held part 'chat-hv2': 976 streams, 249484 anchors; loss 1.9346; best token on the path by position 171762/249484, 110155/190149, 76153/147698, 55254/116105, 41462/92465, 31641/74425, 24703/60202; drafts landed on the path 1.568 an anchor
+== train finished: 800 steps, kept under OUT

@@ -1,0 +1,244 @@
+control, DFlash2 at 0.9: code evd3 4.268 3.84, served 4.279 3.84, instrument plain 4.268 3.84; agent evd3 3.287 3.22, served 3.332 3.21, instrument plain 3.287 3.22; chat evd3 2.184 1.64, served 2.190 1.64, instrument plain 2.184 1.64; ja evd3 1.967 1.47, served 1.976 1.47, instrument plain 1.967 1.47; prose evd3 1.902 1.42, served 1.909 1.42, instrument plain 1.902 1.42
+control, DFlash2 at 0.7: code evd3 4.770 4.76, served 4.782 4.75, instrument plain 4.771 4.76; agent evd3 3.597 4.17, served 3.642 4.17, instrument plain 3.597 4.17; chat evd3 2.399 2.19, served 2.410 2.19, instrument plain 2.399 2.19; ja evd3 2.086 1.81, served 2.093 1.81, instrument plain 2.086 1.81; prose evd3 2.033 1.86, served 2.040 1.86, instrument plain 2.033 1.86
+control, DFlash2 at 0.5: code evd3 5.108 5.59, served 5.107 5.58, instrument plain 5.111 5.59; agent evd3 3.813 5.00, served 3.860 4.94, instrument plain 3.813 5.00; chat evd3 2.552 2.92, served 2.561 2.91, instrument plain 2.552 2.92; ja evd3 2.176 2.30, served 2.186 2.30, instrument plain 2.176 2.30; prose evd3 2.140 2.50, served 2.146 2.49, instrument plain 2.140 2.50
+control, g2t 5 launches: DFlash2's predicted seconds of rounds 0.3 1590.7 0.4 1534.2 0.5 1499.0 0.6 1483.9 0.7 1481.7 0.8 1489.4 0.9 1516.1; fastest first [0.7, 0.6, 0.8, 0.5, 0.9, 0.4, 0.3]; 0.5 - 0.7 +17.4 s (served +23.3), 0.9 - 0.7 +34.5 s (served +33.8)
+control, g2t without c20: DFlash2's predicted seconds of rounds 0.3 1739.5 0.4 1675.0 0.5 1634.3 0.6 1615.8 0.7 1611.8 0.8 1618.7 0.9 1646.0; fastest first [0.7, 0.6, 0.8, 0.5, 0.9, 0.4, 0.3]; 0.5 - 0.7 +22.5 s (served +23.3), 0.9 - 0.7 +34.2 s (served +33.8)
+control, evd2 requests: DFlash2's predicted seconds of rounds 0.3 1852.8 0.4 1767.1 0.5 1709.7 0.6 1677.9 0.7 1663.2 0.8 1660.3 0.9 1677.5; fastest first [0.8, 0.7, 0.9, 0.6, 0.5, 0.4, 0.3]; 0.5 - 0.7 +46.5 s (served +23.3), 0.9 - 0.7 +14.3 s (served +33.8)
+g2t 5 launches (41.87 + 5.87 a draft verified): DFlash2 takes cut 0.7, 45.6 tokens a second
+  DFlash2: cut 0.7; speed 1.0000 of DFlash2's; G2 classes 1.0000; code 1.000 agent 1.000 chat 1.000 ja 1.000 prose 1.000
+  own-3: cut 0.5; speed 0.9670 of DFlash2's; G2 classes 0.9773; code 0.959 agent 0.996 chat 0.965 ja 0.969 prose 0.967
+  own-3s1: cut 0.5; speed 0.9655 of DFlash2's; G2 classes 0.9842; code 0.956 agent 1.013 chat 0.957 ja 0.970 prose 0.966
+  own-3b: cut 0.3; speed 0.9849 of DFlash2's; G2 classes 0.9983; code 0.966 agent 1.031 chat 0.983 ja 0.996 prose 0.979
+  own-3bs1: cut 0.3; speed 0.9827 of DFlash2's; G2 classes 1.0022; code 0.969 agent 1.035 chat 0.978 ja 0.988 prose 0.980
+  own-c: cut 0.3; speed 1.0091 of DFlash2's; G2 classes 0.9977; code 1.005 agent 0.990 chat 1.015 ja 1.008 prose 1.011
+  own-cb: cut 0.3; speed 1.0085 of DFlash2's; G2 classes 1.0139; code 1.015 agent 1.013 chat 1.012 ja 1.005 prose 1.004
+  own-3m: cut 0.3; speed 0.9855 of DFlash2's; G2 classes 0.9923; code 0.964 agent 1.021 chat 0.981 ja 0.998 prose 0.984
+  form0-own: cut 0.5; speed 0.9859 of DFlash2's; G2 classes 1.0007; code 0.980 agent 1.022 chat 0.984 ja 0.985 prose 0.986
+  form0-b: cut 0.3; speed 0.9946 of DFlash2's; G2 classes 1.0297; code 0.998 agent 1.062 chat 0.993 ja 0.997 prose 0.981
+  hv-3: cut 0.3; speed 0.9875 of DFlash2's; G2 classes 0.9944; code 0.962 agent 1.027 chat 0.983 ja 0.995 prose 0.993
+  own-3b8: cut 0.5; speed 0.9792 of DFlash2's; G2 classes 1.0028; code 0.967 agent 1.039 chat 0.971 ja 0.997 prose 0.966
+  hv2-1x: cut 0.4; speed 0.9813 of DFlash2's; G2 classes 1.0049; code 0.970 agent 1.039 chat 0.970 ja 0.994 prose 0.976
+  hv2-4x: cut 0.4; speed 0.9896 of DFlash2's; G2 classes 1.0087; code 0.976 agent 1.041 chat 0.981 ja 0.998 prose 0.987
+  hv2-16x: cut 0.4; speed 0.9922 of DFlash2's; G2 classes 1.0239; code 0.967 agent 1.081 chat 0.983 ja 1.001 prose 0.992
+  hv2-16x-t1.25: cut 0.3; speed 0.9858 of DFlash2's; G2 classes 1.0117; code 0.962 agent 1.062 chat 0.974 ja 1.001 prose 0.983
+  hv2-16x-t1.5: cut 0.3; speed 0.9504 of DFlash2's; G2 classes 0.9715; code 0.924 agent 1.019 chat 0.931 ja 0.979 prose 0.945
+  hv2-16x-t2.0: cut 0.3; speed 0.8485 of DFlash2's; G2 classes 0.7881; code 0.700 agent 0.876 chat 0.841 ja 0.912 prose 0.898
+  hv2-4x-long-s400: cut 0.3; speed 0.9763 of DFlash2's; G2 classes 1.0031; code 0.957 agent 1.049 chat 0.966 ja 0.987 prose 0.974
+  hv2-4x-long-s800: cut 0.4; speed 0.9738 of DFlash2's; G2 classes 1.0020; code 0.958 agent 1.046 chat 0.967 ja 0.980 prose 0.970
+  hv2-4x-long-s1200: cut 0.5; speed 0.9772 of DFlash2's; G2 classes 1.0181; code 0.967 agent 1.069 chat 0.964 ja 0.985 prose 0.972
+  hv2-4x-long-s1600: cut 0.4; speed 0.9778 of DFlash2's; G2 classes 1.0120; code 0.970 agent 1.054 chat 0.972 ja 0.975 prose 0.978
+  hv2-4x-long-s2000: cut 0.5; speed 0.9768 of DFlash2's; G2 classes 1.0104; code 0.970 agent 1.051 chat 0.966 ja 0.979 prose 0.976
+  hv2-4x-long-s2400: cut 0.5; speed 0.9769 of DFlash2's; G2 classes 1.0127; code 0.967 agent 1.058 chat 0.967 ja 0.977 prose 0.977
+  hv2-16x-long-s400: cut 0.4; speed 0.9803 of DFlash2's; G2 classes 1.0119; code 0.963 agent 1.061 chat 0.965 ja 0.989 prose 0.983
+  hv2-16x-long-s800: cut 0.4; speed 0.9768 of DFlash2's; G2 classes 1.0156; code 0.955 agent 1.076 chat 0.968 ja 0.982 prose 0.977
+  hv2-16x-long-s1200: cut 0.5; speed 0.9771 of DFlash2's; G2 classes 1.0207; code 0.959 agent 1.083 chat 0.969 ja 0.980 prose 0.975
+  hv2-16x-long-s1600: cut 0.4; speed 0.9825 of DFlash2's; G2 classes 1.0175; code 0.967 agent 1.068 chat 0.975 ja 0.981 prose 0.985
+  hv2-16x-long-s2000: cut 0.4; speed 0.9828 of DFlash2's; G2 classes 1.0244; code 0.973 agent 1.076 chat 0.979 ja 0.976 prose 0.983
+  hv2-16x-long-s2400: cut 0.5; speed 0.9832 of DFlash2's; G2 classes 1.0245; code 0.969 agent 1.080 chat 0.976 ja 0.983 prose 0.982
+  own-3s1 - own-3: -0.0015
+  own-3bs1 - own-3b: -0.0022
+  own-3b - own-3: +0.0179
+  own-3bs1 - own-3s1: +0.0172
+  own-cb - own-c: -0.0006
+  own-3 - own-c: -0.0421
+  own-3b - own-cb: -0.0236
+  own-3bs1 - own-cb: -0.0258
+  DFlash2's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1677.7 0.3 1590.7 0.4 1534.2 0.5 1499.0 0.6 1483.9 0.7 1481.7 0.8 1489.4 0.9 1516.1
+  own-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1581.5 0.3 1550.4 0.4 1536.7 0.5 1532.3 0.6 1540.7 0.7 1554.8 0.8 1575.0 0.9 1610.0
+  own-3s1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1577.1 0.3 1547.3 0.4 1535.1 0.5 1534.6 0.6 1541.2 0.7 1556.2 0.8 1580.2 0.9 1617.6
+  own-3b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1514.8 0.3 1504.4 0.4 1507.5 0.5 1518.1 0.6 1537.8 0.7 1559.0 0.8 1591.1 0.9 1636.0
+  own-3bs1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1511.2 0.3 1507.7 0.4 1511.7 0.5 1522.6 0.6 1542.9 0.7 1566.4 0.8 1597.5 0.9 1645.7
+  own-c's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1468.6 0.3 1468.3 0.4 1476.0 0.5 1491.5 0.6 1508.5 0.7 1530.3 0.8 1555.9 0.9 1593.2
+  own-cb's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1466.3 0.3 1469.2 0.4 1483.9 0.5 1504.3 0.6 1524.3 0.7 1548.9 0.8 1574.5 0.9 1613.7
+  own-3m's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1515.2 0.3 1503.5 0.4 1505.3 0.5 1516.0 0.6 1531.4 0.7 1553.4 0.8 1585.7 0.9 1629.4
+  form0-own's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1559.9 0.3 1519.2 0.4 1504.6 0.5 1502.8 0.6 1509.5 0.7 1523.3 0.8 1543.2 0.9 1576.2
+  form0-b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1485.8 0.3 1489.8 0.4 1502.7 0.5 1522.1 0.6 1543.4 0.7 1566.0 0.8 1592.8 0.9 1636.9
+  hv-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1514.2 0.3 1500.5 0.4 1502.4 0.5 1508.5 0.6 1524.2 0.7 1546.1 0.8 1575.5 0.9 1618.4
+  own-3b8's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1555.4 0.3 1526.3 0.4 1514.5 0.5 1513.1 0.6 1521.6 0.7 1537.1 0.8 1558.0 0.9 1596.8
+  hv2-1x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1552.2 0.3 1522.8 0.4 1509.9 0.5 1513.4 0.6 1520.9 0.7 1538.9 0.8 1561.1 0.9 1598.1
+  hv2-4x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1525.8 0.3 1502.4 0.4 1497.2 0.5 1502.3 0.6 1516.4 0.7 1534.8 0.8 1560.0 0.9 1602.5
+  hv2-16x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1520.1 0.3 1498.7 0.4 1493.3 0.5 1500.9 0.6 1514.2 0.7 1534.2 0.8 1564.2 0.9 1605.6
+  hv2-16x-t1.25's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1495.8 0.3 1502.9 0.4 1519.7 0.5 1541.3 0.6 1563.9 0.7 1591.0 0.8 1624.8 0.9 1672.8
+  hv2-16x-t1.5's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1531.5 0.3 1558.9 0.4 1585.1 0.5 1612.9 0.6 1639.8 0.7 1670.9 0.8 1706.8 0.9 1751.7
+  hv2-16x-t2.0's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1713.1 0.3 1746.2 0.4 1770.2 0.5 1789.7 0.6 1805.5 0.7 1818.7 0.8 1829.8 0.9 1836.9
+  hv2-4x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1529.3 0.3 1517.7 0.4 1522.4 0.5 1534.5 0.6 1554.4 0.7 1574.8 0.8 1603.5 0.9 1648.2
+  hv2-4x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1539.8 0.3 1524.1 0.4 1521.5 0.5 1530.7 0.6 1545.2 0.7 1567.2 0.8 1596.5 0.9 1641.0
+  hv2-4x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1556.4 0.3 1525.7 0.4 1516.3 0.5 1516.2 0.6 1526.4 0.7 1541.3 0.8 1565.8 0.9 1605.2
+  hv2-4x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1561.6 0.3 1530.3 0.4 1515.3 0.5 1515.6 0.6 1523.0 0.7 1534.8 0.8 1558.1 0.9 1595.3
+  hv2-4x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1573.1 0.3 1535.8 0.4 1520.0 0.5 1516.8 0.6 1522.3 0.7 1535.8 0.8 1555.8 0.9 1590.7
+  hv2-4x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1582.7 0.3 1543.4 0.4 1523.3 0.5 1516.7 0.6 1521.6 0.7 1535.5 0.8 1554.0 0.9 1587.6
+  hv2-16x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1525.8 0.3 1511.9 0.4 1511.5 0.5 1520.7 0.6 1538.6 0.7 1560.4 0.8 1586.4 0.9 1630.4
+  hv2-16x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1545.9 0.3 1522.1 0.4 1516.9 0.5 1524.0 0.6 1538.8 0.7 1559.1 0.8 1585.1 0.9 1624.2
+  hv2-16x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1557.7 0.3 1529.2 0.4 1517.1 0.5 1516.4 0.6 1526.7 0.7 1544.7 0.8 1568.1 0.9 1609.8
+  hv2-16x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1542.4 0.3 1517.4 0.4 1508.0 0.5 1509.7 0.6 1520.0 0.7 1539.2 0.8 1565.0 0.9 1604.2
+  hv2-16x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1552.9 0.3 1520.0 0.4 1507.5 0.5 1508.5 0.6 1518.4 0.7 1533.7 0.8 1554.5 0.9 1590.9
+  hv2-16x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1554.4 0.3 1522.2 0.4 1507.7 0.5 1507.0 0.6 1517.6 0.7 1531.9 0.8 1554.3 0.9 1591.4
+g2t without c20 (45.01 + 6.61 a draft verified): DFlash2 takes cut 0.7, 42.0 tokens a second
+  DFlash2: cut 0.7; speed 1.0000 of DFlash2's; G2 classes 1.0000; code 1.000 agent 1.000 chat 1.000 ja 1.000 prose 1.000
+  own-3: cut 0.5; speed 0.9675 of DFlash2's; G2 classes 0.9771; code 0.959 agent 0.996 chat 0.966 ja 0.969 prose 0.967
+  own-3s1: cut 0.5; speed 0.9661 of DFlash2's; G2 classes 0.9843; code 0.956 agent 1.013 chat 0.958 ja 0.971 prose 0.966
+  own-3b: cut 0.3; speed 0.9847 of DFlash2's; G2 classes 0.9976; code 0.965 agent 1.030 chat 0.983 ja 0.996 prose 0.979
+  own-3bs1: cut 0.3; speed 0.9827 of DFlash2's; G2 classes 1.0018; code 0.969 agent 1.035 chat 0.978 ja 0.989 prose 0.981
+  own-c: cut 0.3; speed 1.0090 of DFlash2's; G2 classes 0.9958; code 1.003 agent 0.988 chat 1.015 ja 1.008 prose 1.012
+  own-cb: cut 0.3; speed 1.0090 of DFlash2's; G2 classes 1.0125; code 1.014 agent 1.011 chat 1.013 ja 1.006 prose 1.005
+  own-3m: cut 0.3; speed 0.9852 of DFlash2's; G2 classes 0.9915; code 0.963 agent 1.020 chat 0.981 ja 0.998 prose 0.984
+  form0-own: cut 0.5; speed 0.9862 of DFlash2's; G2 classes 1.0002; code 0.979 agent 1.021 chat 0.984 ja 0.986 prose 0.986
+  form0-b: cut 0.3; speed 0.9952 of DFlash2's; G2 classes 1.0291; code 0.997 agent 1.061 chat 0.994 ja 0.998 prose 0.982
+  hv-3: cut 0.3; speed 0.9870 of DFlash2's; G2 classes 0.9934; code 0.961 agent 1.026 chat 0.982 ja 0.995 prose 0.993
+  own-3b8: cut 0.5; speed 0.9797 of DFlash2's; G2 classes 1.0031; code 0.967 agent 1.039 chat 0.972 ja 0.998 prose 0.967
+  hv2-1x: cut 0.4; speed 0.9811 of DFlash2's; G2 classes 1.0044; code 0.970 agent 1.039 chat 0.970 ja 0.993 prose 0.976
+  hv2-4x: cut 0.4; speed 0.9897 of DFlash2's; G2 classes 1.0084; code 0.976 agent 1.041 chat 0.982 ja 0.998 prose 0.988
+  hv2-16x: cut 0.4; speed 0.9923 of DFlash2's; G2 classes 1.0237; code 0.966 agent 1.081 chat 0.984 ja 1.001 prose 0.992
+  hv2-16x-t1.25: cut 0.3; speed 0.9868 of DFlash2's; G2 classes 1.0124; code 0.962 agent 1.063 chat 0.975 ja 1.002 prose 0.985
+  hv2-16x-t1.5: cut 0.3; speed 0.9528 of DFlash2's; G2 classes 0.9745; code 0.927 agent 1.022 chat 0.934 ja 0.981 prose 0.948
+  hv2-16x-t2.0: cut 0.3; speed 0.8525 of DFlash2's; G2 classes 0.7944; code 0.706 agent 0.882 chat 0.845 ja 0.915 prose 0.902
+  hv2-4x-long-s400: cut 0.3; speed 0.9763 of DFlash2's; G2 classes 1.0030; code 0.957 agent 1.049 chat 0.967 ja 0.986 prose 0.975
+  hv2-4x-long-s800: cut 0.4; speed 0.9743 of DFlash2's; G2 classes 1.0025; code 0.959 agent 1.046 chat 0.968 ja 0.980 prose 0.971
+  hv2-4x-long-s1200: cut 0.5; speed 0.9779 of DFlash2's; G2 classes 1.0188; code 0.968 agent 1.070 chat 0.965 ja 0.985 prose 0.973
+  hv2-4x-long-s1600: cut 0.5; speed 0.9780 of DFlash2's; G2 classes 1.0128; code 0.972 agent 1.054 chat 0.964 ja 0.984 prose 0.976
+  hv2-4x-long-s2000: cut 0.5; speed 0.9771 of DFlash2's; G2 classes 1.0105; code 0.970 agent 1.051 chat 0.967 ja 0.978 prose 0.977
+  hv2-4x-long-s2400: cut 0.5; speed 0.9771 of DFlash2's; G2 classes 1.0127; code 0.967 agent 1.058 chat 0.968 ja 0.977 prose 0.978
+  hv2-16x-long-s400: cut 0.4; speed 0.9809 of DFlash2's; G2 classes 1.0121; code 0.963 agent 1.061 chat 0.965 ja 0.989 prose 0.984
+  hv2-16x-long-s800: cut 0.4; speed 0.9770 of DFlash2's; G2 classes 1.0158; code 0.955 agent 1.076 chat 0.968 ja 0.981 prose 0.978
+  hv2-16x-long-s1200: cut 0.5; speed 0.9777 of DFlash2's; G2 classes 1.0215; code 0.959 agent 1.084 chat 0.970 ja 0.980 prose 0.976
+  hv2-16x-long-s1600: cut 0.4; speed 0.9824 of DFlash2's; G2 classes 1.0173; code 0.967 agent 1.068 chat 0.976 ja 0.979 prose 0.986
+  hv2-16x-long-s2000: cut 0.5; speed 0.9826 of DFlash2's; G2 classes 1.0245; code 0.971 agent 1.078 chat 0.975 ja 0.983 prose 0.980
+  hv2-16x-long-s2400: cut 0.5; speed 0.9836 of DFlash2's; G2 classes 1.0249; code 0.969 agent 1.081 chat 0.977 ja 0.982 prose 0.983
+  own-3s1 - own-3: -0.0014
+  own-3bs1 - own-3b: -0.0020
+  own-3b - own-3: +0.0173
+  own-3bs1 - own-3s1: +0.0166
+  own-cb - own-c: -0.0000
+  own-3 - own-c: -0.0416
+  own-3b - own-cb: -0.0243
+  own-3bs1 - own-cb: -0.0263
+  DFlash2's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1837.9 0.3 1739.5 0.4 1675.0 0.5 1634.3 0.6 1615.8 0.7 1611.8 0.8 1618.7 0.9 1646.0
+  own-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1724.9 0.3 1688.8 0.4 1672.3 0.5 1666.0 0.6 1673.9 0.7 1688.3 0.8 1709.1 0.9 1746.0
+  own-3s1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1719.7 0.3 1685.2 0.4 1670.3 0.5 1668.4 0.6 1674.3 0.7 1689.5 0.8 1714.5 0.9 1754.0
+  own-3b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1649.9 0.3 1636.8 0.4 1638.7 0.5 1649.0 0.6 1669.4 0.7 1691.6 0.8 1725.5 0.9 1773.2
+  own-3bs1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1645.6 0.3 1640.2 0.4 1643.1 0.5 1653.8 0.6 1674.8 0.7 1699.5 0.8 1732.3 0.9 1783.5
+  own-c's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1599.4 0.3 1597.3 0.4 1604.4 0.5 1620.2 0.6 1637.8 0.7 1660.7 0.8 1687.6 0.9 1727.3
+  own-cb's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1596.1 0.3 1597.4 0.4 1612.2 0.5 1633.5 0.6 1654.3 0.7 1680.3 0.8 1707.4 0.9 1749.0
+  own-3m's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1650.6 0.3 1636.0 0.4 1636.5 0.5 1647.0 0.6 1662.7 0.7 1685.6 0.8 1719.7 0.9 1766.1
+  form0-own's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1702.2 0.3 1655.4 0.4 1637.8 0.5 1634.4 0.6 1640.5 0.7 1654.4 0.8 1675.0 0.9 1709.7
+  form0-b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1616.9 0.3 1619.5 0.4 1632.4 0.5 1652.6 0.6 1674.9 0.7 1698.7 0.8 1727.0 0.9 1774.0
+  hv-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1649.7 0.3 1633.0 0.4 1633.7 0.5 1639.1 0.6 1655.1 0.7 1677.9 0.8 1709.0 0.9 1754.4
+  own-3b8's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1696.4 0.3 1662.6 0.4 1648.1 0.5 1645.2 0.6 1653.2 0.7 1669.1 0.8 1690.8 0.9 1731.6
+  hv2-1x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1692.7 0.3 1658.6 0.4 1642.9 0.5 1645.4 0.6 1652.3 0.7 1670.8 0.8 1694.0 0.9 1732.9
+  hv2-4x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1663.4 0.3 1635.8 0.4 1628.6 0.5 1632.9 0.6 1647.1 0.7 1666.0 0.8 1692.4 0.9 1737.4
+  hv2-16x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1657.1 0.3 1631.8 0.4 1624.3 0.5 1631.2 0.6 1644.6 0.7 1665.3 0.8 1696.8 0.9 1740.7
+  hv2-16x-t1.25's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1627.2 0.3 1633.4 0.4 1650.4 0.5 1672.9 0.6 1696.6 0.7 1725.2 0.8 1761.1 0.9 1812.3
+  hv2-16x-t1.5's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1662.9 0.3 1691.6 0.4 1719.1 0.5 1748.5 0.6 1777.1 0.7 1810.2 0.8 1848.5 0.9 1896.5
+  hv2-16x-t2.0's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1855.4 0.3 1890.6 0.4 1916.2 0.5 1937.0 0.6 1953.9 0.7 1967.9 0.8 1979.8 0.9 1987.4
+  hv2-4x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1665.3 0.3 1650.9 0.4 1654.6 0.5 1666.5 0.6 1687.2 0.7 1708.5 0.8 1738.8 0.9 1786.3
+  hv2-4x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1677.6 0.3 1658.5 0.4 1654.2 0.5 1662.9 0.6 1677.6 0.7 1700.6 0.8 1731.4 0.9 1778.6
+  hv2-4x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1697.2 0.3 1661.5 0.4 1649.7 0.5 1648.2 0.6 1658.0 0.7 1673.3 0.8 1698.9 0.9 1740.6
+  hv2-4x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1703.3 0.3 1667.1 0.4 1649.0 0.5 1648.0 0.6 1654.8 0.7 1666.5 0.8 1690.7 0.9 1730.0
+  hv2-4x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1716.2 0.3 1673.3 0.4 1654.4 0.5 1649.5 0.6 1654.2 0.7 1667.8 0.8 1688.5 0.9 1725.2
+  hv2-4x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1727.0 0.3 1681.9 0.4 1658.3 0.5 1649.5 0.6 1653.6 0.7 1667.6 0.8 1686.6 0.9 1721.9
+  hv2-16x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1662.0 0.3 1645.0 0.4 1643.2 0.5 1652.0 0.6 1670.4 0.7 1693.1 0.8 1720.5 0.9 1767.2
+  hv2-16x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1684.8 0.3 1656.9 0.4 1649.7 0.5 1656.1 0.6 1671.0 0.7 1692.1 0.8 1719.4 0.9 1760.7
+  hv2-16x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1698.7 0.3 1665.5 0.4 1650.6 0.5 1648.5 0.6 1658.4 0.7 1676.9 0.8 1701.3 0.9 1745.4
+  hv2-16x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1681.9 0.3 1652.5 0.4 1640.7 0.5 1641.1 0.6 1651.2 0.7 1671.0 0.8 1697.9 0.9 1739.3
+  hv2-16x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1693.9 0.3 1655.9 0.4 1640.6 0.5 1640.3 0.6 1649.7 0.7 1665.3 0.8 1686.9 0.9 1725.2
+  hv2-16x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1695.7 0.3 1658.4 0.4 1640.9 0.5 1638.7 0.6 1649.0 0.7 1663.3 0.8 1686.6 0.9 1725.8
+evd2 requests (43.0 + 8.26 a draft verified): DFlash2 takes cut 0.8, 40.7 tokens a second
+  DFlash2: cut 0.8; speed 1.0000 of DFlash2's; G2 classes 1.0000; code 1.000 agent 1.000 chat 1.000 ja 1.000 prose 1.000
+  own-3: cut 0.5; speed 0.9688 of DFlash2's; G2 classes 0.9691; code 0.959 agent 0.979 chat 0.967 ja 0.972 prose 0.971
+  own-3s1: cut 0.6; speed 0.9691 of DFlash2's; G2 classes 0.9885; code 0.964 agent 1.013 chat 0.961 ja 0.972 prose 0.968
+  own-3b: cut 0.4; speed 0.9861 of DFlash2's; G2 classes 0.9947; code 0.971 agent 1.019 chat 0.984 ja 0.997 prose 0.981
+  own-3bs1: cut 0.4; speed 0.9843 of DFlash2's; G2 classes 0.9993; code 0.974 agent 1.024 chat 0.981 ja 0.987 prose 0.984
+  own-c: cut 0.4; speed 1.0076 of DFlash2's; G2 classes 0.9944; code 1.005 agent 0.984 chat 1.013 ja 1.007 prose 1.009
+  own-cb: cut 0.3; speed 1.0104 of DFlash2's; G2 classes 0.9965; code 1.009 agent 0.984 chat 1.016 ja 1.009 prose 1.013
+  own-3m: cut 0.4; speed 0.9869 of DFlash2's; G2 classes 0.9920; code 0.969 agent 1.015 chat 0.983 ja 0.998 prose 0.986
+  form0-own: cut 0.6; speed 0.9868 of DFlash2's; G2 classes 0.9898; code 0.984 agent 0.996 chat 0.987 ja 0.986 prose 0.987
+  form0-b: cut 0.3; speed 0.9976 of DFlash2's; G2 classes 1.0177; code 0.995 agent 1.041 chat 0.998 ja 1.000 prose 0.990
+  hv-3: cut 0.5; speed 0.9886 of DFlash2's; G2 classes 1.0027; code 0.976 agent 1.030 chat 0.984 ja 0.991 prose 0.991
+  own-3b8: cut 0.5; speed 0.9809 of DFlash2's; G2 classes 0.9970; code 0.967 agent 1.027 chat 0.974 ja 0.998 prose 0.971
+  hv2-1x: cut 0.6; speed 0.9818 of DFlash2's; G2 classes 1.0004; code 0.974 agent 1.027 chat 0.968 ja 0.993 prose 0.980
+  hv2-4x: cut 0.5; speed 0.9904 of DFlash2's; G2 classes 1.0063; code 0.979 agent 1.033 chat 0.983 ja 0.998 prose 0.988
+  hv2-16x: cut 0.5; speed 0.9918 of DFlash2's; G2 classes 1.0189; code 0.970 agent 1.068 chat 0.982 ja 0.999 prose 0.994
+  hv2-16x-t1.25: cut 0.3; speed 0.9909 of DFlash2's; G2 classes 1.0089; code 0.968 agent 1.050 chat 0.983 ja 1.002 prose 0.992
+  hv2-16x-t1.5: cut 0.3; speed 0.9663 of DFlash2's; G2 classes 0.9853; code 0.946 agent 1.025 chat 0.951 ja 0.988 prose 0.962
+  hv2-16x-t2.0: cut 0.3; speed 0.8768 of DFlash2's; G2 classes 0.8267; code 0.749 agent 0.904 chat 0.871 ja 0.931 prose 0.921
+  hv2-4x-long-s400: cut 0.4; speed 0.9778 of DFlash2's; G2 classes 1.0016; code 0.963 agent 1.041 chat 0.969 ja 0.988 prose 0.975
+  hv2-4x-long-s800: cut 0.4; speed 0.9760 of DFlash2's; G2 classes 0.9975; code 0.963 agent 1.032 chat 0.973 ja 0.977 prose 0.976
+  hv2-4x-long-s1200: cut 0.5; speed 0.9806 of DFlash2's; G2 classes 1.0152; code 0.973 agent 1.057 chat 0.971 ja 0.982 prose 0.979
+  hv2-4x-long-s1600: cut 0.6; speed 0.9798 of DFlash2's; G2 classes 1.0109; code 0.974 agent 1.047 chat 0.966 ja 0.985 prose 0.979
+  hv2-4x-long-s2000: cut 0.6; speed 0.9793 of DFlash2's; G2 classes 1.0071; code 0.975 agent 1.039 chat 0.968 ja 0.980 prose 0.980
+  hv2-4x-long-s2400: cut 0.6; speed 0.9791 of DFlash2's; G2 classes 1.0113; code 0.977 agent 1.046 chat 0.969 ja 0.978 prose 0.979
+  hv2-16x-long-s400: cut 0.4; speed 0.9832 of DFlash2's; G2 classes 1.0057; code 0.968 agent 1.044 chat 0.970 ja 0.989 prose 0.989
+  hv2-16x-long-s800: cut 0.5; speed 0.9783 of DFlash2's; G2 classes 1.0125; code 0.964 agent 1.062 chat 0.969 ja 0.980 prose 0.980
+  hv2-16x-long-s1200: cut 0.5; speed 0.9803 of DFlash2's; G2 classes 1.0182; code 0.965 agent 1.071 chat 0.976 ja 0.976 prose 0.982
+  hv2-16x-long-s1600: cut 0.5; speed 0.9848 of DFlash2's; G2 classes 1.0207; code 0.975 agent 1.066 chat 0.978 ja 0.981 prose 0.986
+  hv2-16x-long-s2000: cut 0.5; speed 0.9836 of DFlash2's; G2 classes 1.0191; code 0.975 agent 1.063 chat 0.980 ja 0.975 prose 0.986
+  hv2-16x-long-s2400: cut 0.5; speed 0.9843 of DFlash2's; G2 classes 1.0197; code 0.973 agent 1.066 chat 0.983 ja 0.974 prose 0.989
+  own-3s1 - own-3: +0.0002
+  own-3bs1 - own-3b: -0.0017
+  own-3b - own-3: +0.0172
+  own-3bs1 - own-3s1: +0.0152
+  own-cb - own-c: +0.0028
+  own-3 - own-c: -0.0388
+  own-3b - own-cb: -0.0244
+  own-3bs1 - own-cb: -0.0261
+  DFlash2's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1978.8 0.3 1852.8 0.4 1767.1 0.5 1709.7 0.6 1677.9 0.7 1663.2 0.8 1660.3 0.9 1677.5
+  own-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1808.2 0.3 1757.1 0.4 1729.3 0.5 1713.7 0.6 1714.2 0.7 1722.1 0.8 1736.7 0.9 1767.0
+  own-3s1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1800.7 0.3 1751.6 0.4 1725.9 0.5 1715.0 0.6 1713.3 0.7 1722.0 0.8 1740.7 0.9 1773.4
+  own-3b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1715.6 0.3 1690.5 0.4 1683.8 0.5 1686.7 0.6 1700.7 0.7 1717.5 0.8 1746.5 0.9 1788.1
+  own-3bs1's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1709.3 0.3 1692.5 0.4 1686.7 0.5 1690.1 0.6 1705.1 0.7 1724.7 0.8 1752.3 0.9 1797.1
+  own-c's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1662.6 0.3 1648.8 0.4 1647.7 0.5 1657.1 0.6 1669.4 0.7 1687.7 0.8 1710.0 0.9 1744.6
+  own-cb's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1653.1 0.3 1643.1 0.4 1650.8 0.5 1666.4 0.6 1682.3 0.7 1703.9 0.8 1726.8 0.9 1763.7
+  own-3m's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1717.8 0.3 1691.1 0.4 1682.3 0.5 1685.5 0.6 1695.1 0.7 1712.2 0.8 1741.2 0.9 1781.4
+  form0-own's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1790.6 0.3 1726.4 0.4 1696.9 0.5 1684.2 0.6 1682.5 0.7 1690.0 0.8 1704.7 0.9 1732.7
+  form0-b's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1672.4 0.3 1664.2 0.4 1670.0 0.5 1684.6 0.6 1702.0 0.7 1721.6 0.8 1745.9 0.9 1787.8
+  hv-3's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1718.9 0.3 1690.1 0.4 1681.6 0.5 1679.5 0.6 1688.8 0.7 1705.9 0.8 1731.9 0.9 1770.9
+  own-3b8's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1778.5 0.3 1729.9 0.4 1704.4 0.5 1692.7 0.6 1693.4 0.7 1702.9 0.8 1718.4 0.9 1752.2
+  hv2-1x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1773.6 0.3 1724.6 0.4 1697.9 0.5 1691.7 0.6 1691.1 0.7 1703.4 0.8 1720.8 0.9 1752.9
+  hv2-4x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1739.0 0.3 1697.4 0.4 1680.1 0.5 1676.4 0.6 1683.4 0.7 1696.3 0.8 1717.0 0.9 1755.7
+  hv2-16x's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1732.0 0.3 1693.0 0.4 1675.2 0.5 1673.9 0.6 1680.2 0.7 1695.0 0.8 1720.7 0.9 1758.3
+  hv2-16x-t1.25's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1679.2 0.3 1675.5 0.4 1685.3 0.5 1701.7 0.6 1720.5 0.7 1744.8 0.8 1776.2 0.9 1822.0
+  hv2-16x-t1.5's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1696.1 0.3 1718.2 0.4 1740.4 0.5 1765.7 0.6 1790.6 0.7 1820.1 0.8 1854.8 0.9 1898.4
+  hv2-16x-t2.0's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1861.6 0.3 1893.7 0.4 1916.6 0.5 1935.3 0.6 1950.7 0.7 1963.6 0.8 1974.6 0.9 1981.6
+  hv2-4x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1729.6 0.3 1703.1 0.4 1697.9 0.5 1702.5 0.6 1717.3 0.7 1733.2 0.8 1758.4 0.9 1800.1
+  hv2-4x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1747.4 0.3 1715.2 0.4 1701.2 0.5 1701.8 0.6 1710.0 0.7 1727.4 0.8 1752.8 0.9 1793.9
+  hv2-4x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1777.3 0.3 1726.6 0.4 1704.0 0.5 1693.1 0.6 1695.6 0.7 1704.6 0.8 1724.8 0.9 1759.8
+  hv2-4x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1787.1 0.3 1735.3 0.4 1705.9 0.5 1695.8 0.6 1694.6 0.7 1699.8 0.8 1717.8 0.9 1750.4
+  hv2-4x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1802.7 0.3 1743.7 0.4 1713.2 0.5 1698.7 0.6 1695.4 0.7 1702.4 0.8 1716.9 0.9 1746.6
+  hv2-4x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1816.0 0.3 1754.4 0.4 1718.6 0.5 1699.9 0.6 1695.6 0.7 1703.1 0.8 1715.7 0.9 1744.1
+  hv2-16x-long-s400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1729.0 0.3 1699.4 0.4 1688.6 0.5 1690.1 0.6 1702.3 0.7 1719.6 0.8 1741.6 0.9 1782.6
+  hv2-16x-long-s800's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1758.6 0.3 1716.6 0.4 1699.1 0.5 1697.2 0.6 1705.4 0.7 1720.6 0.8 1742.2 0.9 1777.5
+  hv2-16x-long-s1200's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1779.7 0.3 1731.5 0.4 1705.4 0.5 1693.7 0.6 1696.0 0.7 1708.1 0.8 1726.5 0.9 1763.7
+  hv2-16x-long-s1600's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1761.7 0.3 1717.4 0.4 1694.4 0.5 1685.9 0.6 1688.6 0.7 1702.2 0.8 1723.2 0.9 1758.1
+  hv2-16x-long-s2000's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1777.8 0.3 1724.0 0.4 1697.4 0.5 1687.9 0.6 1689.3 0.7 1698.6 0.8 1714.3 0.9 1745.6
+  hv2-16x-long-s2400's seconds of rounds by cut (0.2 by the cut alone, not serving's): 0.2 1780.3 0.3 1727.3 0.4 1698.1 0.5 1686.8 0.6 1689.2 0.7 1696.6 0.8 1714.0 0.9 1746.3
+price bound, DFlash2: 0 drafts under 0.1, 0 of them landed; at most +0.0000 of its time saved and 0.0000 of the tokens lost
+price bound, own-3: 1199 drafts under 0.1, 93 of them landed; at most +0.0046 of its time saved and 0.0014 of the tokens lost
+price bound, own-3s1: 1316 drafts under 0.1, 88 of them landed; at most +0.0050 of its time saved and 0.0013 of the tokens lost
+price bound, own-3b: 3484 drafts under 0.1, 300 of them landed; at most +0.0136 of its time saved and 0.0044 of the tokens lost
+price bound, own-3bs1: 4033 drafts under 0.1, 386 of them landed; at most +0.0157 of its time saved and 0.0057 of the tokens lost
+price bound, own-c: 159 drafts under 0.1, 11 of them landed; at most +0.0006 of its time saved and 0.0002 of the tokens lost
+price bound, own-cb: 256 drafts under 0.1, 23 of them landed; at most +0.0010 of its time saved and 0.0003 of the tokens lost
+price bound, own-3m: 3084 drafts under 0.1, 250 of them landed; at most +0.0120 of its time saved and 0.0037 of the tokens lost
+price bound, form0-own: 14 drafts under 0.1, 2 of them landed; at most +0.0001 of its time saved and 0.0000 of the tokens lost
+price bound, form0-b: 239 drafts under 0.1, 10 of them landed; at most +0.0009 of its time saved and 0.0001 of the tokens lost
+price bound, hv-3: 3079 drafts under 0.1, 251 of them landed; at most +0.0120 of its time saved and 0.0037 of the tokens lost
+price bound, own-3b8: 969 drafts under 0.1, 57 of them landed; at most +0.0038 of its time saved and 0.0008 of the tokens lost
+price bound, hv2-1x: 858 drafts under 0.1, 50 of them landed; at most +0.0033 of its time saved and 0.0007 of the tokens lost
+price bound, hv2-4x: 1387 drafts under 0.1, 107 of them landed; at most +0.0054 of its time saved and 0.0016 of the tokens lost
+price bound, hv2-16x: 1557 drafts under 0.1, 106 of them landed; at most +0.0061 of its time saved and 0.0016 of the tokens lost
+price bound, hv2-16x-t1.25: 7487 drafts under 0.1, 875 of them landed; at most +0.0292 of its time saved and 0.0129 of the tokens lost
+price bound, hv2-16x-t1.5: 21755 drafts under 0.1, 4386 of them landed; at most +0.0819 of its time saved and 0.0648 of the tokens lost
+price bound, hv2-16x-t2.0: 80232 drafts under 0.1, 34968 of them landed; at most +0.2697 of its time saved and 0.5170 of the tokens lost
+price bound, hv2-4x-long-s400: 3097 drafts under 0.1, 262 of them landed; at most +0.0120 of its time saved and 0.0039 of the tokens lost
+price bound, hv2-4x-long-s800: 2133 drafts under 0.1, 154 of them landed; at most +0.0082 of its time saved and 0.0023 of the tokens lost
+price bound, hv2-4x-long-s1200: 1166 drafts under 0.1, 75 of them landed; at most +0.0045 of its time saved and 0.0011 of the tokens lost
+price bound, hv2-4x-long-s1600: 990 drafts under 0.1, 49 of them landed; at most +0.0038 of its time saved and 0.0007 of the tokens lost
+price bound, hv2-4x-long-s2000: 723 drafts under 0.1, 34 of them landed; at most +0.0028 of its time saved and 0.0005 of the tokens lost
+price bound, hv2-4x-long-s2400: 675 drafts under 0.1, 32 of them landed; at most +0.0026 of its time saved and 0.0005 of the tokens lost
+price bound, hv2-16x-long-s400: 2864 drafts under 0.1, 202 of them landed; at most +0.0111 of its time saved and 0.0030 of the tokens lost
+price bound, hv2-16x-long-s800: 1743 drafts under 0.1, 135 of them landed; at most +0.0067 of its time saved and 0.0020 of the tokens lost
+price bound, hv2-16x-long-s1200: 1154 drafts under 0.1, 78 of them landed; at most +0.0045 of its time saved and 0.0012 of the tokens lost
+price bound, hv2-16x-long-s1600: 1413 drafts under 0.1, 94 of them landed; at most +0.0055 of its time saved and 0.0014 of the tokens lost
+price bound, hv2-16x-long-s2000: 1004 drafts under 0.1, 60 of them landed; at most +0.0039 of its time saved and 0.0009 of the tokens lost
+price bound, hv2-16x-long-s2400: 988 drafts under 0.1, 58 of them landed; at most +0.0038 of its time saved and 0.0009 of the tokens lost
+MTP's tokens a round (evd3's serving line, round time not measured): code 3.702 agent 4.061 chat 2.265 ja 2.285 prose 2.054
